@@ -19,10 +19,10 @@ typedef enum square {
 	NO_SQUARE
 } Square;
 
-extern const U64 FILE_MASK[8];
-extern const U64 RANK_MASK[8];
-extern const U64 DIAGONAL_MASK[15];
-extern const U64 ANTI_DIAGONAL_MASK[15];
+extern const U64 FILE_MASKS[8];
+extern const U64 RANK_MASKS[8];
+extern const U64 DIAGONAL_MASKS[15];
+extern const U64 ANTI_DIAGONAL_MASKS[15];
 extern const U64 SQUARE_TO_BITBOARD[65];
 extern const char* sq_to_str[65];
 

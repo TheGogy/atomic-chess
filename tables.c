@@ -96,6 +96,17 @@ const U64 ROOK_MAGICS[64] = {
   0x0001000204080011ULL, 0x0001000204000801ULL, 0x0001000082000401ULL, 0x0001FFFAABFAD1A2ULL
 };
 
+const int ROOK_RELEVANT_BITS[64] = {
+  52, 53, 53, 53, 53, 53, 53, 52,
+  53, 54, 54, 54, 54, 54, 54, 53,
+  53, 54, 54, 54, 54, 54, 54, 53,
+  53, 54, 54, 54, 54, 54, 54, 53,
+  53, 54, 54, 54, 54, 54, 54, 53,
+  53, 54, 54, 54, 54, 54, 54, 53,
+  53, 54, 54, 54, 54, 54, 54, 53,
+  52, 53, 53, 53, 53, 53, 53, 52,
+};
+
 const U64 BISHOP_MAGICS[64] = {
   0x0002020202020200ULL, 0x0002020202020000ULL, 0x0004010202000000ULL, 0x0004040080000000ULL,
   0x0001104000000000ULL, 0x0000821040000000ULL, 0x0000410410400000ULL, 0x0000104104104000ULL,
@@ -115,19 +126,166 @@ const U64 BISHOP_MAGICS[64] = {
   0x0000000010020200ULL, 0x0000000404080200ULL, 0x0000040404040400ULL, 0x0002020202020200ULL
 };
 
-U64 ROOK_ATTACK_MASK[64];
-int ROOK_ATTACK_SHIFTS[64];
+const int BISHOP_RELEVANT_BITS[64] = {
+  58, 59, 59, 59, 59, 59, 59, 58,
+  59, 59, 59, 59, 59, 59, 59, 59,
+  59, 59, 57, 57, 57, 57, 59, 59,
+  59, 59, 57, 55, 55, 57, 59, 59,
+  59, 59, 57, 55, 55, 57, 59, 59,
+  59, 59, 57, 57, 57, 57, 59, 59,
+  59, 59, 59, 59, 59, 59, 59, 59,
+  58, 59, 59, 59, 59, 59, 59, 58,
+};
+
+U64 ROOK_MASKS[64];
 U64 ROOK_ATTACKS[64][4096];
 
-void initialize_rook_attacks() {
-  U64 edges, subset, index;
-  for (int rank = 1; rank < 8; rank++) {
-    for (int file = 1; file < 8; file++) {
-      int square = rank * 8 + file;
-      edges = ((RANK_MASK[0] | RANK_MASK[7]) & ~RANK_MASK[rank]) |
-              ((FILE_MASK[0] | FILE_MASK[7]) & ~FILE_MASK[rank]);
-      ROOK_ATTACK_MASK[square] = ((RANK_MASK[rank] ^ FILE_MASK[file]) & ~edges);
-      ROOK_ATTACK_SHIFTS[square] = 64 - count_bits(ROOK_ATTACK_MASK[square]);
+U64 mask_rook_attacks(int square) {
+  U64 attacks_bitboard = 0ULL; // Attacks bitboard
+
+  int r, f;
+  int tr = square / 8;
+  int tf = square % 8;
+
+  for(r = tr + 1; r <= 6; r++) attacks_bitboard |= (1ULL << (r * 8 + tf));
+  for(r = tr - 1; r >= 1; r--) attacks_bitboard |= (1ULL << (r * 8 + tf));
+  for(f = tf + 1; f <= 6; f++) attacks_bitboard |= (1ULL << (tr * 8 + f));
+  for(f = tf - 1; f >= 1; f--) attacks_bitboard |= (1ULL << (tr * 8 + f));
+
+  return attacks_bitboard;
+}
+
+U64 mask_rook_attacks_otf(int square, U64 block) {
+  U64 attacks_bitboard = 0ULL; // Attacks bitboard
+
+  int r, f;
+  int tr = square / 8;
+  int tf = square % 8;
+
+  for(r = tr + 1; r <= 7; r++) {
+    attacks_bitboard |= (1ULL << (r * 8 + tf));
+    if ((1ULL << (r * 8 + tf)) & block) break;
+  }
+  for(r = tr - 1; r >= 0; r--) {
+    attacks_bitboard |= (1ULL << (r * 8 + tf));
+    if ((1ULL << (r * 8 + tf)) & block) break;
+  }
+  for(f = tf + 1; f <= 7; f++) {
+    attacks_bitboard |= (1ULL << (tr * 8 + f));
+    if ((1ULL << (tr * 8 + f)) & block) break;
+  }
+  for(f = tf - 1; f >= 0; f--) {
+    attacks_bitboard |= (1ULL << (tr * 8 + f));
+    if ((1ULL << (tr * 8 + f)) & block) break;
+  }
+
+  return attacks_bitboard;
+}
+
+U64 BISHOP_MASKS[64];
+U64 BISHOP_ATTACKS[64][4096];
+
+U64 mask_bishop_attacks(int square) {
+  U64 attacks = 0ULL;
+
+  int r, f;
+  int tr = square / 8;
+  int tf = square % 8;
+
+  for (r=tr+1, f=tf+1; r<=6 && f<=6; r++, f++) attacks |= (1ULL << (r * 8 + f));
+  for (r=tr-1, f=tf+1; r>=1 && f<=6; r--, f++) attacks |= (1ULL << (r * 8 + f));
+  for (r=tr+1, f=tf-1; r<=6 && f>=1; r++, f--) attacks |= (1ULL << (r * 8 + f));
+  for (r=tr-1, f=tf-1; r>=1 && f>=1; r--, f--) attacks |= (1ULL << (r * 8 + f));
+
+  return attacks;
+}
+
+U64 mask_bishop_attacks_otf(int square, U64 block) {
+  U64 attacks_bitboard = 0ULL; // Attacks bitboard
+
+  int r, f;
+  int tr = square / 8;
+  int tf = square % 8;
+
+  for (r=tr+1, f=tf+1; r<=7 && f<=7; r++, f++) {
+    attacks_bitboard |= (1ULL << (r * 8 + f));
+    if ((1ULL << (r * 8 + f)) & block) break;
+  }
+  for (r=tr-1, f=tf+1; r>=0 && f<=7; r--, f++) {
+    attacks_bitboard |= (1ULL << (r * 8 + f));
+    if ((1ULL << (r * 8 + f)) & block) break;
+  }
+  for (r=tr+1, f=tf-1; r<=7 && f>=0; r++, f--) {
+    attacks_bitboard |= (1ULL << (r * 8 + f));
+    if ((1ULL << (r * 8 + f)) & block) break;
+  }
+  for (r=tr-1, f=tf-1; r>=0 && f>=0; r--, f--) {
+    attacks_bitboard |= (1ULL << (r * 8 + f));
+    if ((1ULL << (r * 8 + f)) & block) break;
+  }
+  return attacks_bitboard;
+}
+
+U64 set_occupancies(int index, int bits_in_mask, U64 attack_mask) {
+  U64 occupancies = 0ULL;
+  for (int count = 0; count < bits_in_mask; count++) {
+    int square = get_lsb_idx(attack_mask);
+    pop_bit(attack_mask, square);
+
+    if (index & (1 << count)) {
+      // Populate occupancies map
+      occupancies |= (1ULL << square);
+    }
+  }
+  return occupancies;
+}
+
+void init_rook_attacks() {
+  for (int square = 0; square < 64; square++) {
+    ROOK_MASKS[square] = mask_rook_attacks(square);
+    U64 attack_mask = ROOK_MASKS[square];
+    int relevant_bits_count = count_bits(attack_mask);
+    int occupancies_indices = (1 << relevant_bits_count);
+
+    for (int index = 0 ; index < occupancies_indices; index++) {
+      U64 occupancies = set_occupancies(index, relevant_bits_count, attack_mask);
+      int magic_index = (occupancies * ROOK_MAGICS[square]) >> ROOK_RELEVANT_BITS[square];
+      ROOK_ATTACKS[square][magic_index] = mask_rook_attacks_otf(square, occupancies);
     }
   }
 }
+
+void init_bishop_attacks() {
+  for (int square = 0; square < 64; square++) {
+    BISHOP_MASKS[square] = mask_bishop_attacks(square);
+    U64 attack_mask = BISHOP_MASKS[square];
+    int relevant_bits_count = count_bits(attack_mask);
+    int occupancies_indices = (1 << relevant_bits_count);
+
+    for (int index = 0 ; index < occupancies_indices; index++) {
+      U64 occupancies = set_occupancies(index, relevant_bits_count, attack_mask);
+      int magic_index = (occupancies * BISHOP_MAGICS[square]) >> BISHOP_RELEVANT_BITS[square];
+      BISHOP_ATTACKS[square][magic_index] = mask_bishop_attacks_otf(square, occupancies);
+    }
+  }
+}
+
+void initialize_all_lookups() {
+  init_rook_attacks();
+  init_bishop_attacks();
+}
+
+U64 get_rook_attacks(int square, U64 occupancies) {
+  U64 magic_lookup = occupancies & ROOK_MASKS[square];
+  magic_lookup *= ROOK_MAGICS[square];
+  magic_lookup >>= ROOK_RELEVANT_BITS[square];
+  return ROOK_ATTACKS[square][magic_lookup];
+}
+
+U64 get_bishop_attacks(int square, U64 occupancies) {
+  U64 magic_lookup = occupancies & BISHOP_MASKS[square];
+  magic_lookup *= BISHOP_MAGICS[square];
+  magic_lookup >>= BISHOP_RELEVANT_BITS[square];
+  return BISHOP_ATTACKS[square][magic_lookup];
+}
+

@@ -12,6 +12,9 @@ extern const U64 BLACK_PAWN_ATTACKS[64];
 
 void initialize_rook_attacks();
 void initialize_bishop_attacks();
-void initialize_all();
+void initialize_all_lookups();
+
+U64 get_rook_attacks(int square, U64 occupancies);
+U64 get_bishop_attacks(int square, U64 occupancies);
 
 #endif // !TABLES_H
