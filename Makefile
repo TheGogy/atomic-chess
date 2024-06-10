@@ -2,7 +2,7 @@
 CC = gcc
 LIBS = -lm
 CFLAGS = -Wall -Wextra -Wpedantic -std=gnu99 $(LIBS)
-SRCS = bitboards.c main.c
+SRCS = tables.c bitboards.c main.c
 OBJS = $(SRCS:.c=.o)
 EXEC = atom
 
