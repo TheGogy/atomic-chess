@@ -5,7 +5,13 @@
 #include "utils.h"
 
 typedef enum color {WHITE, BLACK} Color;
-typedef enum piece {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING} Piece;
+typedef enum piecetype {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING} Piecetype;
+typedef enum piece {
+  WHITE_PAWN, WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN, WHITE_KING,
+  BLACK_PAWN, BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN, BLACK_KING,
+  NO_PIECE
+} Piece;
+
 
 typedef enum square {
 	a1, b1, c1, d1, e1, f1, g1, h1,
@@ -24,7 +30,10 @@ extern const U64 RANK_MASKS[8];
 extern const U64 DIAGONAL_MASKS[15];
 extern const U64 ANTI_DIAGONAL_MASKS[15];
 extern const U64 SQUARE_TO_BITBOARD[65];
-extern const char* sq_to_str[65];
+
+extern const char* SQUARE_TO_STRING[65];
+extern const Piece CHAR_TO_PIECE[];
+extern const char PIECE_TO_CHAR[];
 
 inline Color invert_color(Color c) {
   return (Color)(c ^ BLACK);

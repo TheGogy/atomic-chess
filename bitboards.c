@@ -61,6 +61,40 @@ const char* SQUARE_TO_STRING[65] = {
   "None"
 };
 
+const Piece CHAR_TO_PIECE[] = {
+  ['P'] = WHITE_PAWN,
+  ['N'] = WHITE_KNIGHT,
+  ['B'] = WHITE_BISHOP,
+  ['R'] = WHITE_ROOK,
+  ['Q'] = WHITE_QUEEN,
+  ['K'] = WHITE_KING,
+
+  ['p'] = BLACK_PAWN,
+  ['n'] = BLACK_KNIGHT,
+  ['b'] = BLACK_BISHOP,
+  ['r'] = BLACK_ROOK,
+  ['q'] = BLACK_QUEEN,
+  ['k'] = BLACK_KING,
+};
+
+const char PIECE_TO_CHAR[] = {
+  [WHITE_PAWN] = 'P',
+  [WHITE_KNIGHT] = 'N',
+  [WHITE_BISHOP] = 'B',
+  [WHITE_ROOK] = 'R',
+  [WHITE_QUEEN] = 'Q',
+  [WHITE_KING] = 'K',
+
+  [BLACK_PAWN] = 'p',
+  [BLACK_KNIGHT] = 'n',
+  [BLACK_BISHOP] = 'b',
+  [BLACK_ROOK] = 'r',
+  [BLACK_QUEEN] = 'q',
+  [BLACK_KING] = 'k',
+
+  [NO_PIECE] = '.',
+};
+
 void print_bitboard(U64 bitboard) {
   printf("\n");
   for (int rank = 0; rank < 8; rank++) {
