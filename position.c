@@ -66,10 +66,11 @@ void move_piece_quiet(Position *pos, Square from, Square to) {
 
 void print_position(Position *pos) {
   printf("\n");
-  for (int rank = 0; rank < 8; rank++) {
+  for (int rank = 7; rank >= 0; rank--) {
     printf(" %d ", rank + 1);
     for (int file = 0; file < 8 ; file++) {
       int square = rank * 8 + file;
+      // printf(" %d", pos->board[square]);
       printf(" %c", PIECE_TO_CHAR[pos->board[square]]);
     }
     printf("\n");
@@ -83,20 +84,64 @@ void print_position(Position *pos) {
          pos->history[pos->ply].entry & BLACK_OO_MASK  ? '-' : 'k',
          pos->history[pos->ply].entry & BLACK_OOO_MASK ? '-' : 'q'
          );
+  printf("Zobrist hash:       %llu\n", pos->zobrist_hash);
+  printf("Ply:                %d\n", pos->ply);
 }
 
 void set_from_fen(Position *pos, const char *fen) {
-  int square = a8;
 
+  // Clear the board beforehand
+  for (int i = 0; i < 12; i++) pos->pieces[i] = 0ULL;
+  for (int i = 0; i < 64; i++) pos->board[i] = NO_PIECE;
+
+  int square = 0;
+
+  // Main position bit of the FEN
   const char *fen_ptr = fen;
   while (*fen_ptr && *fen_ptr != ' ') {
     char c = *fen_ptr++;
-  
     if (isdigit(c)) {
       square += (c - '0');
+    } else if (c == '/') {
+      continue;
     } else {
-      put_piece(pos, CHAR_TO_PIECE[*fen], *fen_ptr);
+      put_piece(pos, CHAR_TO_PIECE[c], square++);
     }
   }
+  
+  // Go to next part of the fen
+  fen_ptr++;
 
+  // Parse side to move
+  if (*fen_ptr++ == 'w') {
+    pos->side_to_play = WHITE;
+  } else {
+    pos->side_to_play = BLACK;
+  }
+
+  // Go to next part of the fen
+  fen_ptr++;
+
+  // Parse castling rights
+  pos->history[0].entry = ALL_CASTLING_MASK;
+  while (*fen_ptr && !isspace(*fen_ptr)) {
+    switch (*fen_ptr) {
+      case 'K':
+        pos->history[0].entry &= ~WHITE_OO_MASK;
+        break;
+
+      case 'Q':
+        pos->history[0].entry &= ~WHITE_OOO_MASK;
+        break;
+
+      case 'k':
+        pos->history[0].entry &= ~BLACK_OO_MASK;
+        break;
+
+      case 'q':
+        pos->history[0].entry &= ~BLACK_OOO_MASK;
+        break;
+    }
+    fen_ptr++;
+  }
 }
