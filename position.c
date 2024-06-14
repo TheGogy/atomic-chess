@@ -38,8 +38,8 @@ inline void put_piece(Position *pos, Piece p, Square s) {
 
 // Removes the given piece from the specified Square
 // Assumes that the square contains that piece
-inline void remove_piece(Position *pos, Piece p, Square s){
-  pos->zobrist_hash ^= ZOBRIST_TABLE[p][s];
+inline void remove_piece(Position *pos, Square s){
+  pos->zobrist_hash ^= ZOBRIST_TABLE[pos->board[s]][s];
   pos->pieces[pos->board[s]] &= ~SQUARE_TO_BITBOARD[s];
   pos->board[s] = NO_PIECE;
 }

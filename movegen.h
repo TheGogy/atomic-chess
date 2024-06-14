@@ -6,6 +6,33 @@
 #include "bitboards.h"
 #include "position.h"
 
+
+typedef enum moveflag {
+  QUIET = 0x0,             // 0b0000
+  DOUBLE_PUSH = 0x1,       // 0b0001
+  OO = 0x2,                // 0b0010
+  OOO = 0x3,               // 0b0011
+  CAPTURE = 0x8,           // 0b1000
+  CAPTURES = 0xF,          // 0b1111
+  EN_PASSANT = 0xA,        // 0b1010
+  PROMOTIONS = 0x7,        // 0b0111
+  PROMOTION_CAPTURES = 0xC,// 0b1100
+  PR_KNIGHT = 0x4,         // 0b0100
+  PR_BISHOP = 0x5,         // 0b0101
+  PR_ROOK = 0x6,           // 0b0110
+  PR_QUEEN = 0x7,          // 0b0111
+  PC_KNIGHT = 0xC,         // 0b1100
+  PC_BISHOP = 0xD,         // 0b1101
+  PC_ROOK = 0xE,           // 0b1110
+  PC_QUEEN = 0xF           // 0b1111
+} MoveFlag;
+
+typedef struct move {
+  MoveFlag flags;
+  Square from;
+  Square to;
+} Move;
+
 // Get the bitboard of all diagonal sliders of given color
 inline U64 get_diagonal_sliders(Position *pos, Color c) {
   return c == WHITE ? pos->pieces[WHITE_BISHOP] | pos->pieces[WHITE_QUEEN] :
@@ -42,5 +69,7 @@ inline U64 get_attackers_from(Position *pos, Color c, Square s, U64 occupancies)
     (get_bishop_attacks(s, occupancies) & (pos->pieces[BLACK_BISHOP] | pos->pieces[BLACK_QUEEN])) |
     (get_rook_attacks(s, occupancies) & (pos->pieces[BLACK_ROOK] | pos->pieces[BLACK_QUEEN]));
 }
+
+void play(Position *pos, Color c, Move *m);
 
 #endif // !MOVEGEN_H
