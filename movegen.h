@@ -71,5 +71,6 @@ inline U64 get_attackers_from(Position *pos, Color c, Square s, U64 occupancies)
 }
 
 void play(Position *pos, Color c, Move *m);
+void undo(Position *pos, Color c, Move *m);
 
 #endif // !MOVEGEN_H
