@@ -1,5 +1,4 @@
 #include "tables.h"
-#include "bitboards.h"
 #include <string.h>
 
 const U64 KING_ATTACKS[64] = {
@@ -295,30 +294,34 @@ void init_bishop_attacks() {
   }
 }
 
-U64 get_rook_attacks(int square, U64 occupancies) {
+inline U64 get_rook_attacks(Square square, U64 occupancies) {
   U64 magic_lookup = occupancies & ROOK_MASKS[square];
   magic_lookup *= ROOK_MAGICS[square];
   magic_lookup >>= ROOK_RELEVANT_BITS[square];
   return ROOK_ATTACKS[square][magic_lookup];
 }
 
-U64 get_bishop_attacks(int square, U64 occupancies) {
+inline U64 get_xray_rook_lookups(Square square, U64 occupancies, U64 blockers) {
+  U64 attacks = get_rook_attacks(square, occupancies);
+  blockers &= attacks;
+  return attacks ^ get_rook_attacks(square, occupancies ^ blockers);
+}
+
+inline U64 get_bishop_attacks(Square square, U64 occupancies) {
   U64 magic_lookup = occupancies & BISHOP_MASKS[square];
   magic_lookup *= BISHOP_MAGICS[square];
   magic_lookup >>= BISHOP_RELEVANT_BITS[square];
   return BISHOP_ATTACKS[square][magic_lookup];
 }
 
-U64 get_xray_bishop_lookups(int square, U64 occupancies, U64 blockers) {
+inline U64 get_xray_bishop_lookups(Square square, U64 occupancies, U64 blockers) {
   U64 attacks = get_bishop_attacks(square, occupancies);
   blockers &= attacks;
   return attacks ^ get_bishop_attacks(square, occupancies ^ blockers);
 }
 
-U64 get_xray_rook_lookups(int square, U64 occupancies, U64 blockers) {
-  U64 attacks = get_rook_attacks(square, occupancies);
-  blockers &= attacks;
-  return attacks ^ get_rook_attacks(square, occupancies ^ blockers);
+inline U64 get_queen_attacks(Square square, U64 occupancies) {
+  return get_bishop_attacks(square, occupancies) | get_rook_attacks(square, occupancies);
 }
 
 U64 SQUARES_BETWEEN[64][64];
