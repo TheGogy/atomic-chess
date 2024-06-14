@@ -34,10 +34,10 @@ U64 get_xray_bishop_lookups(Square square, U64 occupancies, U64 blockers);
 U64 get_queen_attacks(Square square, U64 occupancies);
 
 // All squares that aren't on the A file
-const U64 NOT_A_FILE = 18374403900871474942ULL;
+extern const U64 NOT_A_FILE;
 
 // All squares that aren't on the H file
-const U64 NOT_H_FILE = 9187201950435737471ULL;
+extern const U64 NOT_H_FILE;
 
 // Get all pawn attacks at once for given color.
 inline U64 get_all_pawn_attacks(U64 pawn_bb, Color c) {

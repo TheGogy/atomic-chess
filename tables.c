@@ -1,6 +1,12 @@
 #include "tables.h"
 #include <string.h>
 
+// All squares that aren't on the A file
+const U64 NOT_A_FILE = 18374403900871474942ULL;
+
+// All squares that aren't on the H file
+const U64 NOT_H_FILE = 9187201950435737471ULL;
+
 const U64 KING_ATTACKS[64] = {
   0x302ULL, 0x705ULL, 0xe0aULL, 0x1c14ULL,
   0x3828ULL, 0x7050ULL, 0xe0a0ULL, 0xc040ULL,

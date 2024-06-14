@@ -1,7 +1,5 @@
-#include <stdio.h>
 #include <stdlib.h>
 
-#include "bitboards.h"
 #include "position.h"
 #include "tables.h"
 

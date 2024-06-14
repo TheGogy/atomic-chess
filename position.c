@@ -1,7 +1,16 @@
 #include "position.h"
-#include "bitboards.h"
 #include <ctype.h>
 #include <stdio.h>
+
+const U64 WHITE_OO_MASK = 0x90ULL;
+const U64 WHITE_OOO_MASK = 0x11ULL;
+const U64 WHITE_OO_BLOCKERS_AND_ATTACKERS_MASK = 0x60ULL;
+const U64 WHITE_OOO_BLOCKERS_AND_ATTACKERS_MASK = 0xeULL;
+const U64 BLACK_OO_MASK = 0x9000000000000000ULL;
+const U64 BLACK_OOO_MASK = 0x1100000000000000ULL;
+const U64 BLACK_OO_BLOCKERS_AND_ATTACKERS_MASK = 0x6000000000000000ULL;
+const U64 BLACK_OOO_BLOCKERS_AND_ATTACKERS_MASK = 0xE00000000000000ULL;
+const U64 ALL_CASTLING_MASK = 0x9100000000000091ULL;
 
 U64 ZOBRIST_TABLE[6][64];
 
@@ -84,7 +93,7 @@ void set_from_fen(Position *pos, const char *fen) {
       square += (c - '0');
     } else if (c == '/') {
       // Go to start of line above
-      square -= 16; 
+      square -= 16;
     } else {
       put_piece(pos, CHAR_TO_PIECE[c], square++);
     }
