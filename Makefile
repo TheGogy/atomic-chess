@@ -1,7 +1,7 @@
 
 CC = gcc
 LIBS = -lm
-CFLAGS = -Wall -Wextra -Wpedantic -std=gnu99 -Ofast $(LIBS)
+CFLAGS = -Wall -Wextra -Wpedantic -std=gnu99 -Ofast -flto $(LIBS)
 SRCS = bitboards.c tables.c position.c movegen.c main.c
 OBJS = $(SRCS:.c=.o)
 EXEC = atom

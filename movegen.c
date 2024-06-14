@@ -1,7 +1,9 @@
 #include "movegen.h"
 #include "bitboards.h"
 #include "position.h"
+#include "tables.h"
 
+// Plays a move in the given position
 void play(Position *pos, Color c, Move *m){
   // Switch side to play
   pos->side_to_play ^= BLACK;
@@ -121,6 +123,7 @@ void play(Position *pos, Color c, Move *m){
   }
 }
 
+// Undoes the given move in the given position
 void undo(Position *pos, Color c, Move *m){
   switch (m->flags) {
     case QUIET:
@@ -188,4 +191,47 @@ void undo(Position *pos, Color c, Move *m){
   }
   pos->side_to_play ^= BLACK;
   --pos->ply;
+}
+
+// Generates all legal moves for the given position and increments pointer to
+// last move in move list
+Move* generate_legal_moves(Position *pos, Color me, Move *list) {
+  Color you = me ^ BLACK;
+  const U64 my_pieces = get_all_pieces(pos, me);
+  const U64 your_pieces = get_all_pieces(pos, you);
+  const U64 all_pieces = my_pieces | your_pieces;
+
+  const Square my_king = get_lsb_idx(pos->pieces[me == WHITE ? WHITE_KING : BLACK_KING]);
+  const Square your_king = get_lsb_idx(pos->pieces[you == WHITE ? WHITE_KING : BLACK_KING]);
+
+  const U64 my_diagonal_sliders = get_diagonal_sliders(pos, me);
+  const U64 your_diagonal_sliders = get_diagonal_sliders(pos,you);
+  const U64 my_orthogonal_sliders = get_orthogoal_sliders(pos, me);
+  const U64 your_orthogonal_sliders = get_orthogoal_sliders(pos, you);
+
+  U64 b1, b2, b3;
+
+  U64 danger_squares = 0ULL;
+
+  // Add leaping piece attacks
+  danger_squares |= get_all_pawn_attacks(pos->pieces[you == WHITE ? WHITE_PAWN : BLACK_PAWN], you);
+  danger_squares |= get_all_knight_attacks(pos->pieces[you == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT]);
+
+  // Add diagonal sliders attacks
+  b1 = your_diagonal_sliders;
+  b2 = your_orthogonal_sliders;
+
+  while (b1) danger_squares |= get_bishop_attacks(pop_lsb(&b1), all_pieces ^ SQUARE_TO_BITBOARD[my_king]);
+  while (b2) danger_squares |= get_rook_attacks(pop_lsb(&b2), all_pieces ^ SQUARE_TO_BITBOARD[my_king]);
+
+  // Add king attacks
+  danger_squares |= KING_ATTACKS[your_king];
+
+  // Add king moves
+  b1 = KING_ATTACKS[my_king] & ~(my_pieces | danger_squares);
+  list = get_moves(my_king, b1 & ~your_pieces, list, QUIET);
+  list = get_moves(my_king, b1 & your_pieces, list, CAPTURE);
+
+
+  return list;
 }

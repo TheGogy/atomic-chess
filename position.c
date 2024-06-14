@@ -72,12 +72,16 @@ inline void move_piece_quiet(Position *pos, Square from, Square to) {
 // Sets the position according to the given FEN.
 void set_from_fen(Position *pos, const char *fen) {
 
-  // Clear the board beforehand
+  // Clear the board for the position
   for (int i = 0; i < 12; i++) pos->pieces[i] = 0ULL;
   for (int i = 0; i < 64; i++) pos->board[i] = NO_PIECE;
+
+  // Clear position data
+  pos->ply = 0;
   pos->history[0].entry = ALL_CASTLING_MASK;
   pos->history[0].enpassant = NO_SQUARE;
   pos->history[0].captured = NO_PIECE;
+  pos->zobrist_hash = 0;
 
   // Pointer to the current character
   const char *fen_ptr = fen;

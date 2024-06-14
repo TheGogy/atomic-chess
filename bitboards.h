@@ -10,7 +10,13 @@
 #define pop_bit(bitboard, square) ((bitboard) &= ~(1ULL << (square)))
 
 #define count_bits(bitboard) __builtin_popcountll(bitboard)
-#define get_lsb_idx(bitboard) (bitboard ? __builtin_ctzll(bitboard) : -1)
+#define get_lsb_idx(bitboard) __builtin_ctzll(bitboard)
+
+inline int pop_lsb(U64 *bitboard) {
+  int lsb_idx = get_lsb_idx(*bitboard);
+  *bitboard &= *bitboard - 1; // Pop lsb
+  return lsb_idx;
+}
 
 typedef enum color {WHITE, BLACK} Color;
 typedef enum piecetype {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING} Piecetype;

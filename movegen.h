@@ -70,6 +70,17 @@ inline U64 get_attackers_from(Position *pos, Color c, Square s, U64 occupancies)
     (get_rook_attacks(s, occupancies) & (pos->pieces[BLACK_ROOK] | pos->pieces[BLACK_QUEEN]));
 }
 
+inline Move* get_moves(Square from, U64 to, Move *list, MoveFlag flags) {
+  while (to) {
+    Move move;
+    move.flags = flags;
+    move.from = from;
+    move.to = (Square)pop_lsb(&to);
+    *list++ = move;
+  }
+  return list;
+}
+
 void play(Position *pos, Color c, Move *m);
 void undo(Position *pos, Color c, Move *m);
 
