@@ -24,6 +24,8 @@ void initialize_rook_attacks();
 void initialize_bishop_attacks();
 void initialize_all_lookups();
 
+U64 mask_bishop_attacks_otf(Square s, U64 occupancies);
+
 // Get attacks for given piece.
 U64 get_rook_attacks(Square square, U64 occupancies);
 U64 get_xray_rook_lookups(Square square, U64 occupancies, U64 blockers);

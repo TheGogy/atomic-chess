@@ -1,4 +1,5 @@
 #include "tables.h"
+#include "bitboards.h"
 #include <string.h>
 
 // All squares that aren't on the corresponding file(s)
@@ -148,7 +149,7 @@ const int BISHOP_RELEVANT_BITS[64] = {
 U64 ROOK_MASKS[64];
 U64 ROOK_ATTACKS[64][4096];
 
-U64 mask_rook_attacks(int square) {
+U64 mask_rook_attacks(Square square) {
   U64 attacks_bitboard = 0ULL; // Attacks bitboard
 
   int r, f;
@@ -167,7 +168,7 @@ U64 mask_rook_attacks(int square) {
   return attacks_bitboard;
 }
 
-U64 mask_rook_attacks_otf(int square, U64 block) {
+U64 mask_rook_attacks_otf(Square square, U64 block) {
   U64 attacks_bitboard = 0ULL; // Attacks bitboard
 
   int r, f;
@@ -201,7 +202,7 @@ U64 mask_rook_attacks_otf(int square, U64 block) {
 U64 BISHOP_MASKS[64];
 U64 BISHOP_ATTACKS[64][4096];
 
-U64 mask_bishop_attacks(int square) {
+U64 mask_bishop_attacks(Square square) {
   U64 attacks = 0ULL;
 
   int r, f;
@@ -220,7 +221,7 @@ U64 mask_bishop_attacks(int square) {
   return attacks;
 }
 
-U64 mask_bishop_attacks_otf(int square, U64 block) {
+U64 mask_bishop_attacks_otf(Square square, U64 block) {
   U64 attacks_bitboard = 0ULL; // Attacks bitboard
 
   int r, f;
@@ -253,7 +254,7 @@ U64 mask_bishop_attacks_otf(int square, U64 block) {
 U64 set_occupancies(int index, int bits_in_mask, U64 attack_mask) {
   U64 occupancies = 0ULL;
   for (int count = 0; count < bits_in_mask; count++) {
-    int square = get_lsb_idx(attack_mask);
+    Square square = get_lsb_idx(attack_mask);
     pop_bit(attack_mask, square);
 
     if (index & (1 << count)) {
@@ -265,7 +266,7 @@ U64 set_occupancies(int index, int bits_in_mask, U64 attack_mask) {
 }
 
 void init_rook_attacks() {
-  for (int square = 0; square < 64; square++) {
+  for (Square square = 0; square < 64; square++) {
     ROOK_MASKS[square] = mask_rook_attacks(square);
     U64 attack_mask = ROOK_MASKS[square];
     int relevant_bits_count = count_bits(attack_mask);
@@ -283,7 +284,7 @@ void init_rook_attacks() {
 }
 
 void init_bishop_attacks() {
-  for (int square = 0; square < 64; square++) {
+  for (Square square = 0; square < 64; square++) {
     BISHOP_MASKS[square] = mask_bishop_attacks(square);
     U64 attack_mask = BISHOP_MASKS[square];
     int relevant_bits_count = count_bits(attack_mask);
@@ -331,8 +332,9 @@ inline U64 get_queen_attacks(Square square, U64 occupancies) {
 }
 
 U64 SQUARES_BETWEEN[64][64];
+U64 LINE_BETWEEN[64][64];
 
-void init_squares_between() {
+void init_extra_lookups() {
   U64 squares;
   for (int s1 = a1; s1 <= h8; ++s1) {
     int s1_row = s1 / 8;
@@ -346,42 +348,30 @@ void init_squares_between() {
       int s2_diag = s2_row - s2_col;
       int s2_anti_diag = s2_row + s2_col;
 
-      squares = SQUARE_TO_BITBOARD[s1] + SQUARE_TO_BITBOARD[s2];
+      squares = SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2];
 
       if (s1_row == s2_row || s1_col == s2_col) {
         // same row or column
         SQUARES_BETWEEN[s1][s2] = mask_rook_attacks_otf(s1, squares) &
                                   mask_rook_attacks_otf(s2, squares);
+
+        LINE_BETWEEN[s1][s2] = (
+          mask_rook_attacks_otf(s1, 0ULL) &
+          mask_rook_attacks_otf(s2, 0ULL) ) | 
+          (SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2]);
+
       } else if (s1_diag == s2_diag || s1_anti_diag == s2_anti_diag) {
         SQUARES_BETWEEN[s1][s2] = mask_bishop_attacks_otf(s1, squares) &
                                   mask_bishop_attacks_otf(s2, squares);
-      }
-    }
-  }
-}
 
-U64 LINE_BETWEEN[64][64];
+        LINE_BETWEEN[s1][s2] = (
+          mask_bishop_attacks_otf(s1, 0ULL) &
+          mask_bishop_attacks_otf(s2, 0ULL) ) | 
+          (SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2]);
 
-void init_line_between() {
-  for (int s1 = a1; s1 <= h8; ++s1) {
-    int s1_row = s1 / 8;
-    int s1_col = s1 % 8;
-    int s1_diag = s1_row - s1_col;
-    int s1_anti_diag = s1_row + s1_col;
-
-    for (int s2 = a1; s2 <= h8; ++s2) {
-      int s2_row = s2 / 8;
-      int s2_col = s2 % 8;
-      int s2_diag = s2_row - s2_col;
-      int s2_anti_diag = s2_row + s2_col;
-
-      if (s1_row == s2_row || s1_col == s2_col) {
-        // same row or column
-      } else if (s1_diag == s2_diag || s1_anti_diag == s2_anti_diag) {
-        LINE_BETWEEN[s1][s2] = mask_rook_attacks(s1) & mask_rook_attacks(s2);
-        // same diagonal
-        LINE_BETWEEN[s1][s2] =
-            mask_bishop_attacks(s1) & mask_bishop_attacks(s2);
+      } else {
+        SQUARES_BETWEEN[s1][s2] = 0ULL;
+        LINE_BETWEEN[s1][s2] = 0ULL;
       }
     }
   }
@@ -407,7 +397,6 @@ void init_pseudo_legal() {
 void initialize_all_lookups() {
   init_rook_attacks();
   init_bishop_attacks();
-  init_squares_between();
-  init_line_between();
+  init_extra_lookups();
   init_pseudo_legal();
 }
