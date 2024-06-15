@@ -333,16 +333,17 @@ inline U64 get_queen_attacks(Square square, U64 occupancies) {
 
 U64 SQUARES_BETWEEN[64][64];
 U64 LINE_BETWEEN[64][64];
+U64 PATH_BETWEEN[64][64];
 
 void init_extra_lookups() {
   U64 squares;
-  for (int s1 = a1; s1 <= h8; ++s1) {
+  for (int s1 = a8; s1 <= h1; ++s1) {
     int s1_row = s1 / 8;
     int s1_col = s1 % 8;
     int s1_diag = s1_row - s1_col;
     int s1_anti_diag = s1_row + s1_col;
 
-    for (int s2 = a1; s2 <= h8; ++s2) {
+    for (int s2 = a8; s2 <= h1; ++s2) {
       int s2_row = s2 / 8;
       int s2_col = s2 % 8;
       int s2_diag = s2_row - s2_col;
@@ -360,6 +361,8 @@ void init_extra_lookups() {
           mask_rook_attacks_otf(s2, 0ULL) ) | 
           (SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2]);
 
+        PATH_BETWEEN[s1][s2] = LINE_BETWEEN[s1][s2] | (SQUARE_TO_BITBOARD[s2]);
+
       } else if (s1_diag == s2_diag || s1_anti_diag == s2_anti_diag) {
         SQUARES_BETWEEN[s1][s2] = mask_bishop_attacks_otf(s1, squares) &
                                   mask_bishop_attacks_otf(s2, squares);
@@ -369,9 +372,12 @@ void init_extra_lookups() {
           mask_bishop_attacks_otf(s2, 0ULL) ) | 
           (SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2]);
 
+        PATH_BETWEEN[s1][s2] = LINE_BETWEEN[s1][s2] | (SQUARE_TO_BITBOARD[s2]);
+
       } else {
         SQUARES_BETWEEN[s1][s2] = 0ULL;
         LINE_BETWEEN[s1][s2] = 0ULL;
+        PATH_BETWEEN[s1][s2] = 0ULL;
       }
     }
   }
@@ -386,7 +392,7 @@ void init_pseudo_legal() {
   memcpy(PAWN_ATTACKS[BLACK], BLACK_PAWN_ATTACKS, sizeof(BLACK_PAWN_ATTACKS));
   memcpy(PSEUDO_LEGAL_ATTACKS[KNIGHT], KNIGHT_ATTACKS, sizeof(KNIGHT_ATTACKS));
   memcpy(PSEUDO_LEGAL_ATTACKS[KING], KING_ATTACKS, sizeof(KING_ATTACKS));
-  for (Square s = a1; s <= h8; ++s) {
+  for (Square s = a8; s <= h1; ++s) {
     PSEUDO_LEGAL_ATTACKS[ROOK][s] = mask_rook_attacks(s);
     PSEUDO_LEGAL_ATTACKS[BISHOP][s] = mask_bishop_attacks(s);
     PSEUDO_LEGAL_ATTACKS[QUEEN][s] =
