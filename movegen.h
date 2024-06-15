@@ -34,19 +34,19 @@ typedef struct move {
 } Move;
 
 // Get the bitboard of all diagonal sliders of given color
-inline U64 get_diagonal_sliders(Position *pos, Color c) {
+static inline U64 get_diagonal_sliders(Position *pos, Color c) {
   return c == WHITE ? pos->pieces[WHITE_BISHOP] | pos->pieces[WHITE_QUEEN] :
                       pos->pieces[BLACK_BISHOP] | pos->pieces[BLACK_QUEEN] ;
 }
 
 // Get the bitboard of all orthogonal sliders of given color
-inline U64 get_orthogoal_sliders(Position *pos, Color c) {
+static inline U64 get_orthogonal_sliders(Position *pos, Color c) {
   return c == WHITE ? pos->pieces[WHITE_ROOK] | pos->pieces[WHITE_QUEEN] :
                       pos->pieces[BLACK_ROOK] | pos->pieces[BLACK_QUEEN] ;
 }
 
 // Get the bitboard of all pieces of given color
-inline U64 get_all_pieces(Position *pos, Color c) {
+static inline U64 get_all_pieces(Position *pos, Color c) {
   return c == WHITE ?
     pos->pieces[WHITE_PAWN] | pos->pieces[WHITE_KNIGHT] | pos->pieces[WHITE_BISHOP] |
     pos->pieces[WHITE_ROOK] | pos->pieces[WHITE_QUEEN] | pos->pieces[WHITE_KING]
@@ -57,7 +57,7 @@ inline U64 get_all_pieces(Position *pos, Color c) {
 
 // Gets a bitboard of all the pieces of a given color attacking the given square
 // inline U64 __attribute__((always_inline)) get_attackers_from(Position *pos, Color c, Square s, U64 occupancies) {
-inline U64 get_attackers_from(Position *pos, Color c, Square s, U64 occupancies) {
+static inline U64 get_attackers_from(Position *pos, Color c, Square s, U64 occupancies) {
   return c == WHITE ?
     (BLACK_PAWN_ATTACKS[s] & pos->pieces[WHITE_PAWN]) |
     (KNIGHT_ATTACKS[s] & pos->pieces[WHITE_KNIGHT])   |
@@ -83,5 +83,7 @@ inline Move* get_moves(Square from, U64 to, Move *list, MoveFlag flags) {
 
 void play(Position *pos, Color c, Move *m);
 void undo(Position *pos, Color c, Move *m);
+
+Move* generate_legal_moves(Position *pos, Move *list);
 
 #endif // !MOVEGEN_H

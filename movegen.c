@@ -193,45 +193,67 @@ void undo(Position *pos, Color c, Move *m){
   --pos->ply;
 }
 
+// Gets the rook + queen pins
+inline U64 get_pinhv(Position *pos, U64 your_orthogonal_sliders, Square my_king) {
+  U64 pinHV = 0ULL;
+  // TODO: Check if this works without making a new variable
+  U64 targets = your_orthogonal_sliders;
+  Square enemy_piece;
+  while (targets) {
+    enemy_piece = pop_lsb(&targets);
+    pinHV |= PIN_BETWEEN[my_king][enemy_piece]; 
+  }
+  return pinHV;
+}
+
+// Gets the bishop + queen pins
+inline U64 get_pind12(Position *pos, U64 your_diagonal_sliders, Square my_king, U64 *ep_target) {
+  U64 pinD12 = 0ULL;
+  // TODO: Check if this works without making a new variable
+  U64 targets = your_diagonal_sliders;
+  Square enemy_piece;
+  while (targets) {
+    enemy_piece = pop_lsb(&targets);
+    pinD12 |= PIN_BETWEEN[my_king][enemy_piece];
+
+    // Have to account for en passant
+    // https://lichess.org/editor?fen=6q1%2F8%2F8%2F3pP3%2F8%2F1K6%2F8%2F8+w+-+-+0+1
+    if (PIN_BETWEEN[my_king][enemy_piece] & *ep_target) *ep_target = 0ULL;
+  }
+  return pinD12;
+}
+
 // Generates all legal moves for the given position and increments pointer to
 // last move in move list
-Move* generate_legal_moves(Position *pos, Color me, Move *list) {
+Move* generate_legal_moves(Position *pos, Move *list) {
+  Color me = pos->side_to_play;
   Color you = me ^ BLACK;
-  const U64 my_pieces = get_all_pieces(pos, me);
-  const U64 your_pieces = get_all_pieces(pos, you);
-  const U64 all_pieces = my_pieces | your_pieces;
 
-  const Square my_king = get_lsb_idx(pos->pieces[me == WHITE ? WHITE_KING : BLACK_KING]);
-  const Square your_king = get_lsb_idx(pos->pieces[you == WHITE ? WHITE_KING : BLACK_KING]);
+  U64 my_king = pos->pieces[me == WHITE ? WHITE_KING : BLACK_KING];
+  U64 your_king = pos->pieces[you == WHITE ? WHITE_KING : BLACK_KING];
 
-  const U64 my_diagonal_sliders = get_diagonal_sliders(pos, me);
-  const U64 your_diagonal_sliders = get_diagonal_sliders(pos,you);
-  const U64 my_orthogonal_sliders = get_orthogoal_sliders(pos, me);
-  const U64 your_orthogonal_sliders = get_orthogoal_sliders(pos, you);
+  Square my_king_square = get_lsb_idx(my_king);
+  Square your_king_square = get_lsb_idx(your_king);
 
-  U64 b1, b2, b3;
+  U64 all_my_pieces = get_all_pieces(pos, me);
+  U64 all_your_pieces = get_all_pieces(pos, you);
+  U64 my_orthogonal_sliders = get_orthogonal_sliders(pos, me);
+  U64 your_orthogonal_sliders = get_orthogonal_sliders(pos, you);
+  U64 my_diagonal_sliders = get_diagonal_sliders(pos, me);
+  U64 your_diagonal_sliders = get_diagonal_sliders(pos, you);
 
-  U64 danger_squares = 0ULL;
+  U64 all_pieces = all_my_pieces | all_your_pieces;
 
-  // Add leaping piece attacks
-  danger_squares |= get_all_pawn_attacks(pos->pieces[you == WHITE ? WHITE_PAWN : BLACK_PAWN], you);
-  danger_squares |= get_all_knight_attacks(pos->pieces[you == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT]);
+  U64 rook_pin = 0ULL;
+  U64 bishop_pin = 0ULL;
 
-  // Add diagonal sliders attacks
-  b1 = your_diagonal_sliders;
-  b2 = your_orthogonal_sliders;
+  print_bitboard(all_pieces);
 
-  while (b1) danger_squares |= get_bishop_attacks(pop_lsb(&b1), all_pieces ^ SQUARE_TO_BITBOARD[my_king]);
-  while (b2) danger_squares |= get_rook_attacks(pop_lsb(&b2), all_pieces ^ SQUARE_TO_BITBOARD[my_king]);
-
-  // Add king attacks
-  danger_squares |= KING_ATTACKS[your_king];
-
-  // Add king moves
-  b1 = KING_ATTACKS[my_king] & ~(my_pieces | danger_squares);
-  list = get_moves(my_king, b1 & ~your_pieces, list, QUIET);
-  list = get_moves(my_king, b1 & your_pieces, list, CAPTURE);
-
-
+  // if (ROOK_MASKS[my_king_square] & your_orthogonal_sliders) {
+  //   U64 attackHV = get_rook_attacks(my_king, all_pieces) & your_orthogonal_sliders;
+  //   while (attackHV) {
+  //     
+  //   }
+  // }
   return list;
 }

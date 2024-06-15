@@ -1,5 +1,6 @@
 #pragma once
 
+#include "position.h"
 #ifndef TABLES_H
 #define TABLES_H
 
@@ -13,11 +14,23 @@ extern const U64 KNIGHT_ATTACKS[64];
 extern const U64 WHITE_PAWN_ATTACKS[64];
 extern const U64 BLACK_PAWN_ATTACKS[64];
 
+// Rook and bishop masks, assuming no blockers
+extern U64 ROOK_MASKS[64];
+extern U64 BISHOP_MASKS[64];
+
 // Bitboard of all squares between two pieces (not including squares themselves)
 extern U64 SQUARES_BETWEEN[64][64];
 
 // Bitboard of all squares along the line between two pieces.
 extern U64 LINE_BETWEEN[64][64];
+
+// Path from enemy to king including square behind king (excluding enemy)
+// [king_square][enemy_square]
+extern U64 CHECK_BETWEEN[64][64];
+
+// Path between king and enemy. Zero if not slider
+// [king_square][enemy_square]
+extern U64 PIN_BETWEEN[64][64];
 
 // Initialization functions to populate all lookup tables
 void initialize_rook_attacks();
@@ -42,7 +55,8 @@ extern const U64 NOT_GH_FILE;
 extern const U64 NOT_AB_FILE;
 
 // Get all pawn attacks at once for given color.
-inline U64 get_all_pawn_attacks(U64 pawn_bb, Color c) {
+inline U64 get_all_pawn_attacks(Position *pos, Color c) {
+  U64 pawn_bb = pos->pieces[c == WHITE ? WHITE_PAWN : BLACK_PAWN];
   return c == WHITE ?
     (pawn_bb & NOT_H_FILE) << 7 |
     (pawn_bb & NOT_A_FILE) << 9
