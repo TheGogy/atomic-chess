@@ -298,10 +298,9 @@ inline U64 get_rook_attacks(Square square, U64 occupancies) {
   return ROOK_ATTACKS[square][magic_lookup];
 }
 
-inline U64 get_xray_rook_lookups(Square square, U64 occupancies, U64 blockers) {
+inline U64 get_xray_rook_lookups(Square square, U64 occupancies) {
   U64 attacks = get_rook_attacks(square, occupancies);
-  blockers &= attacks;
-  return attacks ^ get_rook_attacks(square, occupancies ^ blockers);
+  return attacks ^ get_rook_attacks(square, occupancies ^ (attacks & occupancies));
 }
 
 inline U64 get_bishop_attacks(Square square, U64 occupancies) {
@@ -311,10 +310,9 @@ inline U64 get_bishop_attacks(Square square, U64 occupancies) {
   return BISHOP_ATTACKS[square][magic_lookup];
 }
 
-inline U64 get_xray_bishop_lookups(Square square, U64 occupancies, U64 blockers) {
+inline U64 get_xray_bishop_lookups(Square square, U64 occupancies) {
   U64 attacks = get_bishop_attacks(square, occupancies);
-  blockers &= attacks;
-  return attacks ^ get_bishop_attacks(square, occupancies ^ blockers);
+  return attacks ^ get_bishop_attacks(square, occupancies ^ (attacks & occupancies));
 }
 
 inline U64 get_queen_attacks(Square square, U64 occupancies) {

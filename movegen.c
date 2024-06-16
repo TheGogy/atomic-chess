@@ -193,34 +193,11 @@ void undo(Position *pos, Color c, Move *m){
   --pos->ply;
 }
 
-// Gets the rook + queen pins
-inline U64 get_pinhv(Position *pos, U64 your_orthogonal_sliders, Square my_king) {
-  U64 pinHV = 0ULL;
-  // TODO: Check if this works without making a new variable
-  U64 targets = your_orthogonal_sliders;
-  Square enemy_piece;
-  while (targets) {
-    enemy_piece = pop_lsb(&targets);
-    pinHV |= PIN_BETWEEN[my_king][enemy_piece]; 
+inline void register_slider_check(Square king_sq, Square slider_square, U64 *kingban, U64 *checkmask) {
+  if (*checkmask == 0XFFFFFFFFFFFFFFFFULL) {
+    *checkmask = PIN_BETWEEN[king_sq][slider_square];
   }
-  return pinHV;
-}
-
-// Gets the bishop + queen pins
-inline U64 get_pind12(Position *pos, U64 your_diagonal_sliders, Square my_king, U64 *ep_target) {
-  U64 pinD12 = 0ULL;
-  // TODO: Check if this works without making a new variable
-  U64 targets = your_diagonal_sliders;
-  Square enemy_piece;
-  while (targets) {
-    enemy_piece = pop_lsb(&targets);
-    pinD12 |= PIN_BETWEEN[my_king][enemy_piece];
-
-    // Have to account for en passant
-    // https://lichess.org/editor?fen=6q1%2F8%2F8%2F3pP3%2F8%2F1K6%2F8%2F8+w+-+-+0+1
-    if (PIN_BETWEEN[my_king][enemy_piece] & *ep_target) *ep_target = 0ULL;
-  }
-  return pinD12;
+  *kingban |= CHECK_BETWEEN[king_sq][slider_square];
 }
 
 // Generates all legal moves for the given position and increments pointer to
@@ -247,13 +224,66 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   U64 rook_pin = 0ULL;
   U64 bishop_pin = 0ULL;
 
-  print_bitboard(all_pieces);
+  U64 kingban = 0ULL; // Squares kin cannot move to
+  U64 checkmask = 0XFFFFFFFFFFFFFFFFULL; // 1 for all pieces checking king, else all 1s;
+  
+  U64 enpassant_target = SQUARE_TO_BITBOARD[pos->history[pos->ply].enpassant];
 
-  // if (ROOK_MASKS[my_king_square] & your_orthogonal_sliders) {
-  //   U64 attackHV = get_rook_attacks(my_king, all_pieces) & your_orthogonal_sliders;
-  //   while (attackHV) {
-  //     
-  //   }
-  // }
+  // Generate rook pin masks
+  if (ROOK_MASKS[my_king_square] & your_orthogonal_sliders) {
+    U64 attackHV = get_rook_attacks(my_king_square, all_pieces) & your_orthogonal_sliders;
+    U64 pinsHV = get_xray_rook_lookups(my_king_square, all_pieces) & your_orthogonal_sliders;
+    Square s;
+    while (attackHV) {
+      s = pop_lsb(&attackHV);
+      register_slider_check(my_king, s, &kingban, &checkmask);
+    }
+    while (pinsHV) {
+      s = pop_lsb(&pinsHV);
+      rook_pin |= PIN_BETWEEN[my_king_square][s];
+    }
+  }
+
+  // Generate bishop pin masks
+  if (BISHOP_MASKS[my_king_square] & your_diagonal_sliders) {
+    U64 attackD12 = get_bishop_attacks(my_king_square, all_pieces) & your_diagonal_sliders;
+    U64 pinsD12 = get_xray_bishop_lookups(my_king_square, all_pieces) & your_diagonal_sliders;
+    Square s;
+    while (attackD12) {
+      s = pop_lsb(&attackD12);
+      register_slider_check(my_king, s, &kingban, &checkmask);
+    }
+    
+    while (pinsD12) {
+      s = pop_lsb(&pinsD12);
+      bishop_pin |= PIN_BETWEEN[my_king_square][s];
+    }
+  }
+
+  // Generate En Passant pin masks
+  if (enpassant_target) {
+    const U64 my_pawns = pos->pieces[me == WHITE ? WHITE_PAWN : BLACK_PAWN];
+    const U64 enpassant_rank = (me == WHITE ? WHITE_EP_RANK : BLACK_EP_RANK);
+
+    if ((enpassant_rank & my_king) && (enpassant_rank & your_orthogonal_sliders) && (enpassant_rank & my_pawns)) {
+      const U64 enpassant_left = my_pawns & ((enpassant_target & NOT_H_FILE) >> 1);
+      const U64 enpassant_right = my_pawns & ((enpassant_target & NOT_A_FILE) << 1);
+
+      if (enpassant_left) {
+        const U64 occ_without_ep = all_pieces & ~(enpassant_target | enpassant_left);
+        if ((get_rook_attacks(my_king_square, occ_without_ep) & enpassant_rank) & your_orthogonal_sliders) {
+          enpassant_target = 0ULL;
+        }
+      }
+      if (enpassant_right) {
+        const U64 occ_without_ep = all_pieces & ~(enpassant_target | enpassant_right);
+        if ((get_rook_attacks(my_king_square, occ_without_ep) & enpassant_rank) & your_orthogonal_sliders) {
+          enpassant_target = 0ULL;
+        }
+      }
+    }
+  }
+
+
   return list;
 }
