@@ -321,20 +321,13 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     *list++ = m;
   }
 
-  // // Get pawn moves
-  // b1 = pos->pieces[me == WHITE ? WHITE_PAWN : BLACK_PAWN]; // All my pawns
-  //
-  // // Horizontally pinned pawns can never move, as all their moves are vertical.
-  // // Vertically pinned pawns can only push.
-  // b2 = b1 & orthogonal_pin;
-  // print_bitboard(b2 & FILE_MASKS[my_king_square % 8] & (me == WHITE ? WHITE_DOUBLE_PUSH_RANK : BLACK_DOUBLE_PUSH_RANK));
-
   // Generate knight moves
   // Pinned knights can never move, prune them immediately
   b1 = pos->pieces[me == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT] & ~(orthogonal_pin | diagonal_pin);
   while (b1) {
     Square s = pop_lsb(&b1);
-    b2 = KNIGHT_ATTACKS[s] & (~all_my_pieces | checkmask);
+    b2 = KNIGHT_ATTACKS[s] & ~all_my_pieces & checkmask;
+    print_bitboard(b2);
     list = get_moves(s, b2 & ~all_your_pieces, list, QUIET);
     list = get_moves(s, b2 & all_your_pieces, list, CAPTURE);
   }
