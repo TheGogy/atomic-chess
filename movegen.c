@@ -349,6 +349,14 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     list = get_moves(s, b4 & all_your_pieces, list, CAPTURE);
   }
 
+  b3 = b2 & ~diagonal_pin; // Non pinned bishops
+  while (b3) {
+    Square s = pop_lsb(&b3);
+    b4 = get_bishop_attacks(s, all_pieces) & moveable;
+    list = get_moves(s, b4 & ~all_your_pieces, list, QUIET);
+    list = get_moves(s, b4 & all_your_pieces, list, CAPTURE);
+  }
+
   // Generate rook moves
   // Diagonally pinned rooks can never move: filter them out immediately
   b2 = pos->pieces[me == WHITE ? WHITE_ROOK : BLACK_ROOK] & ~diagonal_pin;
@@ -356,6 +364,14 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   while (b3) {
     Square s = pop_lsb(&b3);
     b4 = get_rook_attacks(s, all_pieces) & moveable & orthogonal_pin;
+    list = get_moves(s, b4 & ~all_your_pieces, list, QUIET);
+    list = get_moves(s, b4 & all_your_pieces, list, CAPTURE);
+  }
+
+  b3 = b2 & ~orthogonal_pin; // Non pinned rooks
+  while (b3) {
+    Square s = pop_lsb(&b3);
+    b4 = get_rook_attacks(s, all_pieces) & moveable;
     list = get_moves(s, b4 & ~all_your_pieces, list, QUIET);
     list = get_moves(s, b4 & all_your_pieces, list, CAPTURE);
   }
