@@ -216,7 +216,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   U64 diagonal_pin = 0ULL;
 
   U64 attacked = 0ULL; // Squares kin cannot move to
-  U64 checkmask = 0XFFFFFFFFFFFFFFFFULL; // 1 for all pieces checking king, else all 1s;
+  U64 checkmask = 0ULL; // 1 for all pieces checking king, else all 1s;
 
   U64 enpassant_target = SQUARE_TO_BITBOARD[pos->history[pos->ply].enpassant];
 
@@ -227,16 +227,11 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   if (PSEUDO_LEGAL_ATTACKS[ROOK][my_king_square] & your_orthogonal_sliders) {
     U64 attackHV = get_rook_attacks(my_king_square, all_pieces) & your_orthogonal_sliders;
     U64 pinsHV = get_xray_rook_lookups(my_king_square, all_pieces) & your_orthogonal_sliders;
-    Square s;
     while (attackHV) {
-      s = pop_lsb(&attackHV);
-      if (checkmask == 0XFFFFFFFFFFFFFFFFULL) {
-        checkmask = PIN_BETWEEN[my_king_square][s];
-      }
+      checkmask |= CHECK_BETWEEN[my_king_square][pop_lsb(&attackHV)];
     }
     while (pinsHV) {
-      s = pop_lsb(&pinsHV);
-      orthogonal_pin |= PIN_BETWEEN[my_king_square][s];
+      orthogonal_pin |= PIN_BETWEEN[my_king_square][pop_lsb(&pinsHV)];
     }
   }
 
@@ -244,19 +239,16 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   if (PSEUDO_LEGAL_ATTACKS[BISHOP][my_king_square] & your_diagonal_sliders) {
     U64 attackD12 = get_bishop_attacks(my_king_square, all_pieces) & your_diagonal_sliders;
     U64 pinsD12 = get_xray_bishop_lookups(my_king_square, all_pieces) & your_diagonal_sliders;
-    Square s;
     while (attackD12) {
-      s = pop_lsb(&attackD12);
-      if (checkmask == 0XFFFFFFFFFFFFFFFFULL) {
-        checkmask = PIN_BETWEEN[my_king_square][s];
-      }
+      checkmask |= CHECK_BETWEEN[my_king_square][pop_lsb(&attackD12)];
     }
 
     while (pinsD12) {
-      s = pop_lsb(&pinsD12);
-      diagonal_pin |= PIN_BETWEEN[my_king_square][s];
+      diagonal_pin |= PIN_BETWEEN[my_king_square][pop_lsb(&pinsD12)];
     }
   }
+
+  if (!checkmask) checkmask = 0xFFFFFFFFFFFFFFFF;
 
   // Generate En Passant pin masks
   if (enpassant_target) {
@@ -329,17 +321,23 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     *list++ = m;
   }
 
-  // Get pawn moves
-  b1 = pos->pieces[me == WHITE ? WHITE_PAWN : BLACK_PAWN]; // All my pawns
+  // // Get pawn moves
+  // b1 = pos->pieces[me == WHITE ? WHITE_PAWN : BLACK_PAWN]; // All my pawns
+  //
+  // // Horizontally pinned pawns can never move, as all their moves are vertical.
+  // // Vertically pinned pawns can only push.
+  // b2 = b1 & orthogonal_pin;
+  // print_bitboard(b2 & FILE_MASKS[my_king_square % 8] & (me == WHITE ? WHITE_DOUBLE_PUSH_RANK : BLACK_DOUBLE_PUSH_RANK));
 
-  // Horizontally pinned pawns can never move, as all their moves are vertical.
-  // Vertically pinned pawns can only push.
-  b2 = b1 & orthogonal_pin;
-  b3 = b1 & ~diagonal_pin;
-  print_bitboard(b2 & FILE_MASKS[my_king_square % 8] & (me == WHITE ? WHITE_DOUBLE_PUSH_RANK : BLACK_DOUBLE_PUSH_RANK));
-  print_bitboard(WHITE_DOUBLE_PUSH_RANK);
-
-  b3 = b1 & ~diagonal_pin;
+  // Generate knight moves
+  // Pinned knights can never move, prune them immediately
+  b1 = pos->pieces[me == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT] & ~(orthogonal_pin | diagonal_pin);
+  while (b1) {
+    Square s = pop_lsb(&b1);
+    b2 = KNIGHT_ATTACKS[s] & (~all_my_pieces | checkmask);
+    list = get_moves(s, b2 & ~all_your_pieces, list, QUIET);
+    list = get_moves(s, b2 & all_your_pieces, list, CAPTURE);
+  }
 
   return list;
 }

@@ -8,23 +8,22 @@
 
 
 typedef enum moveflag {
-  QUIET = 0x0,             // 0b0000
-  DOUBLE_PUSH = 0x1,       // 0b0001
-  OO = 0x2,                // 0b0010
-  OOO = 0x3,               // 0b0011
-  CAPTURE = 0x8,           // 0b1000
-  CAPTURES = 0xF,          // 0b1111
-  EN_PASSANT = 0xA,        // 0b1010
-  PROMOTIONS = 0x7,        // 0b0111
-  PROMOTION_CAPTURES = 0xC,// 0b1100
-  PR_KNIGHT = 0x4,         // 0b0100
-  PR_BISHOP = 0x5,         // 0b0101
-  PR_ROOK = 0x6,           // 0b0110
-  PR_QUEEN = 0x7,          // 0b0111
-  PC_KNIGHT = 0xC,         // 0b1100
-  PC_BISHOP = 0xD,         // 0b1101
-  PC_ROOK = 0xE,           // 0b1110
-  PC_QUEEN = 0xF           // 0b1111
+  QUIET = 0x0,
+  DOUBLE_PUSH = 0x1,
+  OO = 0x2,
+  OOO = 0x3,
+  CAPTURE = 0x8,
+  EN_PASSANT = 0xA,
+  PROMOTIONS = 0x7,
+  PROMOTION_CAPTURES = 0xC,
+  PR_KNIGHT = 0x4,
+  PR_BISHOP = 0x5,
+  PR_ROOK = 0x6,
+  PR_QUEEN = 0x7,
+  PC_KNIGHT = 0xC,
+  PC_BISHOP = 0xD,
+  PC_ROOK = 0xE,
+  PC_QUEEN = 0xF
 } MoveFlag;
 
 typedef struct move {

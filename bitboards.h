@@ -48,6 +48,7 @@ extern const U64 SQUARE_TO_BITBOARD[65];
 extern const char* SQUARE_TO_STRING[65];
 extern const Piece CHAR_TO_PIECE[];
 extern const char PIECE_TO_CHAR[];
+extern const char *MOVETYPE_TO_STR[];
 
 inline Color invert_color(Color c) {
   return (Color)(c ^ BLACK);

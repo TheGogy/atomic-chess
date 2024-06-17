@@ -1,4 +1,5 @@
 #include "bitboards.h"
+#include "movegen.h"
 #include <stdio.h>
 
 #define U64 unsigned long long
@@ -93,6 +94,23 @@ const char PIECE_TO_CHAR[] = {
   [BLACK_KING] = 'k',
 
   [NO_PIECE] = '.',
+};
+
+const char *MOVETYPE_TO_STR[] = {
+  [QUIET] = "QUIET",
+  [DOUBLE_PUSH] = "DOUBLE_PUSH",
+  [OO] = "OO",
+  [OOO] = "OOO",
+  [CAPTURE] = "CAPTURE",
+  [EN_PASSANT] = "EN_PASSANT",
+  [PR_KNIGHT] = "PR_KNIGHT",
+  [PR_BISHOP] = "PR_BISHOP",
+  [PR_ROOK] = "PR_ROOK",
+  [PR_QUEEN] = "PR_QUEEN",
+  [PC_KNIGHT] = "PC_KNIGHT",
+  [PC_BISHOP] = "PC_BISHOP",
+  [PC_ROOK] = "PC_ROOK",
+  [PC_QUEEN] = "PC_QUEEN"
 };
 
 void print_bitboard(U64 bitboard) {
