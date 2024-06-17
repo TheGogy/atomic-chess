@@ -46,12 +46,6 @@ U64 get_xray_bishop_lookups(Square square, U64 occupancies);
 
 U64 get_queen_attacks(Square square, U64 occupancies);
 
-// All squares that aren't on the A file
-extern const U64 NOT_A_FILE;
-extern const U64 NOT_H_FILE;
-extern const U64 NOT_GH_FILE;
-extern const U64 NOT_AB_FILE;
-
 // Get all pawn attacks at once for given color.
 static inline U64 get_all_pawn_attacks(Position *pos, Color c) {
   U64 pawn_bb = pos->pieces[c == WHITE ? WHITE_PAWN : BLACK_PAWN];

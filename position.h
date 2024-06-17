@@ -47,6 +47,11 @@ extern const U64 BLACK_EP_RANK;
 extern const U64 WHITE_DOUBLE_PUSH_RANK;
 extern const U64 BLACK_DOUBLE_PUSH_RANK;
 
+extern const U64 NOT_A_FILE;
+extern const U64 NOT_H_FILE;
+extern const U64 NOT_GH_FILE;
+extern const U64 NOT_AB_FILE;
+
 extern U64 ZOBRIST_TABLE[6][64];
 
 void init_zobrist_table();

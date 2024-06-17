@@ -2,12 +2,6 @@
 #include "bitboards.h"
 #include <string.h>
 
-// All squares that aren't on the corresponding file(s)
-const U64 NOT_A_FILE = 18374403900871474942ULL;
-const U64 NOT_H_FILE = 9187201950435737471ULL;
-const U64 NOT_GH_FILE = 4557430888798830399ULL;
-const U64 NOT_AB_FILE = 18229723555195321596ULL;
-
 const U64 KING_ATTACKS[64] = {
   0x302ULL, 0x705ULL, 0xe0aULL, 0x1c14ULL,
   0x3828ULL, 0x7050ULL, 0xe0a0ULL, 0xc040ULL,
