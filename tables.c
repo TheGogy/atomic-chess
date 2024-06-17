@@ -345,7 +345,7 @@ void init_extra_lookups() {
           mask_rook_attacks_otf(s2, 0ULL) ) | 
           (SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2]);
 
-        CHECK_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | (LINE_BETWEEN[s1][s2] & KING_ATTACKS[s1]);
+        CHECK_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | (LINE_BETWEEN[s1][s2] & KING_ATTACKS[s1]) | SQUARE_TO_BITBOARD[s2];
 
         PIN_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | SQUARE_TO_BITBOARD[s2];
 
@@ -358,7 +358,7 @@ void init_extra_lookups() {
           mask_bishop_attacks_otf(s2, 0ULL) ) | 
           (SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2]);
 
-        CHECK_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | (LINE_BETWEEN[s1][s2] & KING_ATTACKS[s1]);
+        CHECK_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | (LINE_BETWEEN[s1][s2] & KING_ATTACKS[s1]) | SQUARE_TO_BITBOARD[s2];
 
         PIN_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | SQUARE_TO_BITBOARD[s2];
 
