@@ -224,7 +224,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   U64 b1, b2, b3;
 
   // Generate rook pin masks
-  if (ROOK_MASKS[my_king_square] & your_orthogonal_sliders) {
+  if (PSEUDO_LEGAL_ATTACKS[ROOK][my_king_square] & your_orthogonal_sliders) {
     U64 attackHV = get_rook_attacks(my_king_square, all_pieces) & your_orthogonal_sliders;
     U64 pinsHV = get_xray_rook_lookups(my_king_square, all_pieces) & your_orthogonal_sliders;
     Square s;
@@ -241,7 +241,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   }
 
   // Generate bishop pin masks
-  if (BISHOP_MASKS[my_king_square] & your_diagonal_sliders) {
+  if (PSEUDO_LEGAL_ATTACKS[BISHOP][my_king_square] & your_diagonal_sliders) {
     U64 attackD12 = get_bishop_attacks(my_king_square, all_pieces) & your_diagonal_sliders;
     U64 pinsD12 = get_xray_bishop_lookups(my_king_square, all_pieces) & your_diagonal_sliders;
     Square s;
@@ -296,7 +296,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   list = get_moves(my_king_square, b1 & ~all_your_pieces, list, QUIET);
   list = get_moves(my_king_square, b1 & all_your_pieces, list, CAPTURE);
 
-  // Get kingside castling moves
+  // Generate kingside castling moves
   b1 = me == WHITE ? WHITE_OO_MASK : BLACK_OO_MASK;
   b2 = me == WHITE ? WHITE_OO_BLOCKERS_MASK : BLACK_OO_BLOCKERS_MASK;
   if (!((pos->history[pos->ply].entry & b1) | ((all_pieces | attacked) & b2))) {
@@ -312,7 +312,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     *list++ = m;
   }
 
-  // Get queenside castling moves
+  // Generate queenside castling moves
   b1 = me == WHITE ? WHITE_OOO_MASK : BLACK_OOO_MASK;
   b2 = me == WHITE ? WHITE_OOO_BLOCKERS_MASK : BLACK_OOO_BLOCKERS_MASK;
   b3 = me == WHITE ? WHITE_OOO_IGNORE_DANGER : BLACK_OOO_IGNORE_DANGER;
@@ -328,6 +328,18 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     }
     *list++ = m;
   }
+
+  // Get pawn moves
+  b1 = pos->pieces[me == WHITE ? WHITE_PAWN : BLACK_PAWN]; // All my pawns
+
+  // Horizontally pinned pawns can never move, as all their moves are vertical.
+  // Vertically pinned pawns can only push.
+  b2 = b1 & orthogonal_pin;
+  b3 = b1 & ~diagonal_pin;
+  print_bitboard(b2 & FILE_MASKS[my_king_square % 8] & (me == WHITE ? WHITE_DOUBLE_PUSH_RANK : BLACK_DOUBLE_PUSH_RANK));
+  print_bitboard(WHITE_DOUBLE_PUSH_RANK);
+
+  b3 = b1 & ~diagonal_pin;
 
   return list;
 }

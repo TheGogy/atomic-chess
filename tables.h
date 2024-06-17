@@ -13,10 +13,6 @@ extern const U64 KNIGHT_ATTACKS[64];
 extern const U64 WHITE_PAWN_ATTACKS[64];
 extern const U64 BLACK_PAWN_ATTACKS[64];
 
-// Rook and bishop masks, assuming no blockers
-extern U64 ROOK_MASKS[64];
-extern U64 BISHOP_MASKS[64];
-
 // Bitboard of all squares between two pieces (not including squares themselves)
 extern U64 SQUARES_BETWEEN[64][64];
 
@@ -30,6 +26,9 @@ extern U64 CHECK_BETWEEN[64][64];
 // Path between king and enemy. Zero if not slider
 // [king_square][enemy_square]
 extern U64 PIN_BETWEEN[64][64];
+
+// Pseudo legal attacks for all pieces (assuming no blockers)
+extern U64 PSEUDO_LEGAL_ATTACKS[6][64];
 
 // Initialization functions to populate all lookup tables
 void initialize_rook_attacks();

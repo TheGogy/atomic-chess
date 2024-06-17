@@ -163,8 +163,8 @@ U64 mask_rook_attacks_otf(Square square, U64 block) {
   U64 attacks_bitboard = 0ULL; // Attacks bitboard
 
   int r, f;
-  int tr = square / 8;
   int tf = square % 8;
+  int tr = square / 8;
 
   for (r = tr + 1; r <= 7; r++) {
     attacks_bitboard |= (1ULL << (r * 8 + tf));
@@ -386,8 +386,8 @@ void init_pseudo_legal() {
   memcpy(PSEUDO_LEGAL_ATTACKS[KNIGHT], KNIGHT_ATTACKS, sizeof(KNIGHT_ATTACKS));
   memcpy(PSEUDO_LEGAL_ATTACKS[KING], KING_ATTACKS, sizeof(KING_ATTACKS));
   for (Square s = 0; s < 64; ++s) {
-    PSEUDO_LEGAL_ATTACKS[ROOK][s] = mask_rook_attacks(s);
-    PSEUDO_LEGAL_ATTACKS[BISHOP][s] = mask_bishop_attacks(s);
+    PSEUDO_LEGAL_ATTACKS[ROOK][s] = mask_rook_attacks_otf(s, 0ULL);
+    PSEUDO_LEGAL_ATTACKS[BISHOP][s] = mask_bishop_attacks_otf(s, 0ULL);
     PSEUDO_LEGAL_ATTACKS[QUEEN][s] =
         PSEUDO_LEGAL_ATTACKS[ROOK][s] | PSEUDO_LEGAL_ATTACKS[BISHOP][s];
   }

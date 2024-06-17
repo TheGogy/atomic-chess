@@ -26,6 +26,7 @@ typedef struct position {
 
 } Position;
 
+// Castling masks
 extern const U64 WHITE_OO_MASK;
 extern const U64 WHITE_OOO_MASK;
 extern const U64 WHITE_OO_BLOCKERS_MASK;
@@ -37,8 +38,14 @@ extern const U64 BLACK_OO_BLOCKERS_MASK;
 extern const U64 BLACK_OOO_BLOCKERS_MASK;
 extern const U64 BLACK_OOO_IGNORE_DANGER;
 extern const U64 ALL_CASTLING_MASK;
+
+// En passant ranks
 extern const U64 WHITE_EP_RANK;
 extern const U64 BLACK_EP_RANK;
+
+// Rank of first pawn (so that the pawns can be double pushed)
+extern const U64 WHITE_DOUBLE_PUSH_RANK;
+extern const U64 BLACK_DOUBLE_PUSH_RANK;
 
 extern U64 ZOBRIST_TABLE[6][64];
 
