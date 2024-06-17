@@ -1,9 +1,8 @@
 #pragma once
 
-#include "position.h"
 #ifndef TABLES_H
 #define TABLES_H
-
+#include "position.h"
 #include "bitboards.h"
 
 // For these pieces, it is faster to just use a lookup table.
@@ -55,7 +54,7 @@ extern const U64 NOT_GH_FILE;
 extern const U64 NOT_AB_FILE;
 
 // Get all pawn attacks at once for given color.
-inline U64 get_all_pawn_attacks(Position *pos, Color c) {
+static inline U64 get_all_pawn_attacks(Position *pos, Color c) {
   U64 pawn_bb = pos->pieces[c == WHITE ? WHITE_PAWN : BLACK_PAWN];
   return c == WHITE ?
     (pawn_bb & NOT_H_FILE) << 7 |
@@ -66,7 +65,7 @@ inline U64 get_all_pawn_attacks(Position *pos, Color c) {
 }
 
 // Get all knight attacks at once
-inline U64 get_all_knight_attacks(U64 knight_bb) {
+static inline U64 get_all_knight_attacks(U64 knight_bb) {
   U64 l1 = (knight_bb >> 1) & NOT_H_FILE;
   U64 l2 = (knight_bb >> 2) & NOT_GH_FILE;
   U64 r1 = (knight_bb << 1) & NOT_A_FILE;

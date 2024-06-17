@@ -145,7 +145,7 @@ void set_from_fen(Position *pos, const char *fen) {
 
   if (*fen_ptr != '-') {
     int file = fen_ptr[0] - 'a';
-    int rank = 8 - (fen_ptr[1] - '0');
+    int rank = fen_ptr[1] - '0' - 1;
     pos->history[0].enpassant = (Square) rank * 8 + file;
   }
 }

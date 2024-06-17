@@ -193,41 +193,34 @@ void undo(Position *pos, Color c, Move *m){
   --pos->ply;
 }
 
-inline void register_slider_check(Square king_sq, Square slider_square, U64 *kingban, U64 *checkmask) {
-  if (*checkmask == 0XFFFFFFFFFFFFFFFFULL) {
-    *checkmask = PIN_BETWEEN[king_sq][slider_square];
-  }
-  *kingban |= CHECK_BETWEEN[king_sq][slider_square];
-}
-
 // Generates all legal moves for the given position and increments pointer to
 // last move in move list
 Move* generate_legal_moves(Position *pos, Move *list) {
   Color me = pos->side_to_play;
   Color you = me ^ BLACK;
 
-  U64 my_king = pos->pieces[me == WHITE ? WHITE_KING : BLACK_KING];
-  U64 your_king = pos->pieces[you == WHITE ? WHITE_KING : BLACK_KING];
+  U64 my_king_bitboard = pos->pieces[me == WHITE ? WHITE_KING : BLACK_KING];
+  U64 your_king_bitboard = pos->pieces[you == WHITE ? WHITE_KING : BLACK_KING];
 
-  Square my_king_square = get_lsb_idx(my_king);
-  Square your_king_square = get_lsb_idx(your_king);
+  Square my_king_square = get_lsb_idx(my_king_bitboard);
+  Square your_king_square = get_lsb_idx(your_king_bitboard);
 
   U64 all_my_pieces = get_all_pieces(pos, me);
   U64 all_your_pieces = get_all_pieces(pos, you);
-  U64 my_orthogonal_sliders = get_orthogonal_sliders(pos, me);
   U64 your_orthogonal_sliders = get_orthogonal_sliders(pos, you);
-  U64 my_diagonal_sliders = get_diagonal_sliders(pos, me);
   U64 your_diagonal_sliders = get_diagonal_sliders(pos, you);
 
   U64 all_pieces = all_my_pieces | all_your_pieces;
 
-  U64 rook_pin = 0ULL;
-  U64 bishop_pin = 0ULL;
+  U64 orthogonal_pin = 0ULL;
+  U64 diagonal_pin = 0ULL;
 
   U64 kingban = 0ULL; // Squares kin cannot move to
   U64 checkmask = 0XFFFFFFFFFFFFFFFFULL; // 1 for all pieces checking king, else all 1s;
-  
+
   U64 enpassant_target = SQUARE_TO_BITBOARD[pos->history[pos->ply].enpassant];
+
+  U64 b1, b2, b3; // Bitboards used for move generation
 
   // Generate rook pin masks
   if (ROOK_MASKS[my_king_square] & your_orthogonal_sliders) {
@@ -236,11 +229,13 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     Square s;
     while (attackHV) {
       s = pop_lsb(&attackHV);
-      register_slider_check(my_king, s, &kingban, &checkmask);
+      if (checkmask == 0XFFFFFFFFFFFFFFFFULL) {
+        checkmask = PIN_BETWEEN[my_king_square][s];
+      }
     }
     while (pinsHV) {
       s = pop_lsb(&pinsHV);
-      rook_pin |= PIN_BETWEEN[my_king_square][s];
+      orthogonal_pin |= PIN_BETWEEN[my_king_square][s];
     }
   }
 
@@ -251,12 +246,14 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     Square s;
     while (attackD12) {
       s = pop_lsb(&attackD12);
-      register_slider_check(my_king, s, &kingban, &checkmask);
+      if (checkmask == 0XFFFFFFFFFFFFFFFFULL) {
+        checkmask = PIN_BETWEEN[my_king_square][s];
+      }
     }
-    
+
     while (pinsD12) {
       s = pop_lsb(&pinsD12);
-      bishop_pin |= PIN_BETWEEN[my_king_square][s];
+      diagonal_pin |= PIN_BETWEEN[my_king_square][s];
     }
   }
 
@@ -265,7 +262,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     const U64 my_pawns = pos->pieces[me == WHITE ? WHITE_PAWN : BLACK_PAWN];
     const U64 enpassant_rank = (me == WHITE ? WHITE_EP_RANK : BLACK_EP_RANK);
 
-    if ((enpassant_rank & my_king) && (enpassant_rank & your_orthogonal_sliders) && (enpassant_rank & my_pawns)) {
+    if ((enpassant_rank & my_king_bitboard) && (enpassant_rank & your_orthogonal_sliders) && (enpassant_rank & my_pawns)) {
       const U64 enpassant_left = my_pawns & ((enpassant_target & NOT_H_FILE) >> 1);
       const U64 enpassant_right = my_pawns & ((enpassant_target & NOT_A_FILE) << 1);
 
@@ -284,6 +281,21 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     }
   }
 
+  // Generate attacked squares and add them to the king ban
+  kingban |= get_all_knight_attacks(pos->pieces[you == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT]);
+  kingban |= get_all_pawn_attacks(pos, you);
+  kingban |= KING_ATTACKS[your_king_square];
+  b1 = your_orthogonal_sliders;
+  b2 = your_diagonal_sliders;
+  while (b1) kingban |= get_rook_attacks(pop_lsb(&b1), all_pieces ^ my_king_bitboard);
+  while (b2) kingban |= get_bishop_attacks(pop_lsb(&b2), all_pieces ^ my_king_bitboard);
+
+  // King can move to all squares except attacked ones / ones with our pieces
+  b1 = KING_ATTACKS[my_king_square] & ~(all_my_pieces | kingban);
+  list = get_moves(my_king_square, b1 & ~all_your_pieces, list, QUIET);
+  list = get_moves(my_king_square, b1 & all_your_pieces, list, CAPTURE);
+
+  print_bitboard(kingban);
 
   return list;
 }
