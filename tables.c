@@ -338,8 +338,8 @@ void init_extra_lookups() {
       if (s1_row == s2_row || s1_col == s2_col) {
         // same row or column
         SQUARES_BETWEEN[s1][s2] = mask_rook_attacks_otf(s1, squares) &
-                                  mask_rook_attacks_otf(s2, squares);
 
+          mask_rook_attacks_otf(s2, squares);
         LINE_BETWEEN[s1][s2] = (
           mask_rook_attacks_otf(s1, 0ULL) &
           mask_rook_attacks_otf(s2, 0ULL) ) | 
@@ -357,6 +357,8 @@ void init_extra_lookups() {
           mask_bishop_attacks_otf(s1, 0ULL) &
           mask_bishop_attacks_otf(s2, 0ULL) ) | 
           (SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2]);
+
+        CHECK_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | (LINE_BETWEEN[s1][s2] & KING_ATTACKS[s1]);
 
         PIN_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | SQUARE_TO_BITBOARD[s2];
 

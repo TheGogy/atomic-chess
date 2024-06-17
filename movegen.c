@@ -241,6 +241,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     U64 pinsD12 = get_xray_bishop_lookups(my_king_square, all_pieces) & your_diagonal_sliders;
     while (attackD12) {
       checkmask |= CHECK_BETWEEN[my_king_square][pop_lsb(&attackD12)];
+      print_bitboard(checkmask);
     }
 
     while (pinsD12) {
