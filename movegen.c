@@ -376,5 +376,17 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     list = get_moves(s, b4 & all_your_pieces, list, CAPTURE);
   }
 
+  // Generate queen moves
+  // Pinned queens have already been handled with the above lookups: 
+  // we only need to handle the non-pinned ones
+  b1 &= ~(orthogonal_pin | diagonal_pin);
+  while (b1) {
+    Square s = pop_lsb(&b1);
+    b2 = get_queen_attacks(s, all_pieces);
+    list = get_moves(s, b2 & ~all_your_pieces, list, QUIET);
+    list = get_moves(s, b2 & all_your_pieces, list, CAPTURE);
+  }
+
+
   return list;
 }
