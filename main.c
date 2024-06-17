@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
   init_zobrist_table();
 
   Position pos;
-  set_from_fen(&pos, "r1bqk2r/pppp1ppp/2n2n2/2b1p1N1/2B1P3/8/PPPP1PPP/RNBQ1RK1 b kq - 7 5");
+  set_from_fen(&pos, "r3k2r/ppp1qppp/2npNn2/2b1p3/2B1P3/3P3P/PPP1QPP1/RNB2RK1 b kq - 0 9");
   print_position(&pos);
   Move move_list[218];
   Move *last = generate_legal_moves(&pos, move_list);

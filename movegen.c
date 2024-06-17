@@ -316,7 +316,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   b1 = me == WHITE ? WHITE_OOO_MASK : BLACK_OOO_MASK;
   b2 = me == WHITE ? WHITE_OOO_BLOCKERS_MASK : BLACK_OOO_BLOCKERS_MASK;
   b3 = me == WHITE ? WHITE_OOO_IGNORE_DANGER : BLACK_OOO_IGNORE_DANGER;
-  if (!((pos->history[pos->ply].entry & b1) | ((all_pieces | (attacked & ~b3)) & b2))) {
+  if (!((pos->history[pos->ply].entry & b1) | ((all_pieces | (attacked & b3)) & b2))) {
     Move m;
     m.flags = OOO;
     if (me == WHITE) {
