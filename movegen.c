@@ -215,12 +215,13 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   U64 orthogonal_pin = 0ULL;
   U64 diagonal_pin = 0ULL;
 
-  U64 kingban = 0ULL; // Squares kin cannot move to
+  U64 attacked = 0ULL; // Squares kin cannot move to
   U64 checkmask = 0XFFFFFFFFFFFFFFFFULL; // 1 for all pieces checking king, else all 1s;
 
   U64 enpassant_target = SQUARE_TO_BITBOARD[pos->history[pos->ply].enpassant];
 
-  U64 b1, b2, b3; // Bitboards used for move generation
+  // General purpose bitboards used for move generation
+  U64 b1, b2, b3;
 
   // Generate rook pin masks
   if (ROOK_MASKS[my_king_square] & your_orthogonal_sliders) {
@@ -282,20 +283,51 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   }
 
   // Generate attacked squares and add them to the king ban
-  kingban |= get_all_knight_attacks(pos->pieces[you == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT]);
-  kingban |= get_all_pawn_attacks(pos, you);
-  kingban |= KING_ATTACKS[your_king_square];
+  attacked |= get_all_knight_attacks(pos->pieces[you == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT]);
+  attacked |= get_all_pawn_attacks(pos, you);
+  attacked |= KING_ATTACKS[your_king_square];
   b1 = your_orthogonal_sliders;
   b2 = your_diagonal_sliders;
-  while (b1) kingban |= get_rook_attacks(pop_lsb(&b1), all_pieces ^ my_king_bitboard);
-  while (b2) kingban |= get_bishop_attacks(pop_lsb(&b2), all_pieces ^ my_king_bitboard);
+  while (b1) attacked |= get_rook_attacks(pop_lsb(&b1), all_pieces ^ my_king_bitboard);
+  while (b2) attacked |= get_bishop_attacks(pop_lsb(&b2), all_pieces ^ my_king_bitboard);
 
   // King can move to all squares except attacked ones / ones with our pieces
-  b1 = KING_ATTACKS[my_king_square] & ~(all_my_pieces | kingban);
+  b1 = KING_ATTACKS[my_king_square] & ~(all_my_pieces | attacked);
   list = get_moves(my_king_square, b1 & ~all_your_pieces, list, QUIET);
   list = get_moves(my_king_square, b1 & all_your_pieces, list, CAPTURE);
 
-  print_bitboard(kingban);
+  // Get kingside castling moves
+  b1 = me == WHITE ? WHITE_OO_MASK : BLACK_OO_MASK;
+  b2 = me == WHITE ? WHITE_OO_BLOCKERS_MASK : BLACK_OO_BLOCKERS_MASK;
+  if (!((pos->history[pos->ply].entry & b1) | ((all_pieces | attacked) & b2))) {
+    Move m;
+    m.flags = OO;
+    if (me == WHITE) {
+      m.from = e1;
+      m.to = h1;
+    } else {
+      m.from = e8;
+      m.to = h8;
+    }
+    *list++ = m;
+  }
+
+  // Get queenside castling moves
+  b1 = me == WHITE ? WHITE_OOO_MASK : BLACK_OOO_MASK;
+  b2 = me == WHITE ? WHITE_OOO_BLOCKERS_MASK : BLACK_OOO_BLOCKERS_MASK;
+  b3 = me == WHITE ? WHITE_OOO_IGNORE_DANGER : BLACK_OOO_IGNORE_DANGER;
+  if (!((pos->history[pos->ply].entry & b1) | ((all_pieces | (attacked & ~b3)) & b2))) {
+    Move m;
+    m.flags = OOO;
+    if (me == WHITE) {
+      m.from = e1;
+      m.to = c1;
+    } else {
+      m.from = e8;
+      m.to = c8;
+    }
+    *list++ = m;
+  }
 
   return list;
 }

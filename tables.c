@@ -327,13 +327,13 @@ U64 PIN_BETWEEN[64][64];
 
 void init_extra_lookups() {
   U64 squares;
-  for (int s1 = a8; s1 <= h1; ++s1) {
+  for (int s1 = 0; s1 < 64; s1++) {
     int s1_row = s1 / 8;
     int s1_col = s1 % 8;
     int s1_diag = s1_row - s1_col;
     int s1_anti_diag = s1_row + s1_col;
 
-    for (int s2 = a8; s2 <= h1; ++s2) {
+    for (int s2 = 0; s2 < 64; s2++) {
       int s2_row = s2 / 8;
       int s2_col = s2 % 8;
       int s2_diag = s2_row - s2_col;
@@ -385,7 +385,7 @@ void init_pseudo_legal() {
   memcpy(PAWN_ATTACKS[BLACK], BLACK_PAWN_ATTACKS, sizeof(BLACK_PAWN_ATTACKS));
   memcpy(PSEUDO_LEGAL_ATTACKS[KNIGHT], KNIGHT_ATTACKS, sizeof(KNIGHT_ATTACKS));
   memcpy(PSEUDO_LEGAL_ATTACKS[KING], KING_ATTACKS, sizeof(KING_ATTACKS));
-  for (Square s = a8; s <= h1; ++s) {
+  for (Square s = 0; s < 64; ++s) {
     PSEUDO_LEGAL_ATTACKS[ROOK][s] = mask_rook_attacks(s);
     PSEUDO_LEGAL_ATTACKS[BISHOP][s] = mask_bishop_attacks(s);
     PSEUDO_LEGAL_ATTACKS[QUEEN][s] =
