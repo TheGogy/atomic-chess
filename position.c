@@ -1,4 +1,5 @@
 #include "position.h"
+#include "bitboards.h"
 #include <ctype.h>
 #include <stdio.h>
 
@@ -45,7 +46,7 @@ void init_zobrist_table() {
 // Adds the specifiec piece to the specified square
 inline void put_piece(Position *pos, Piece p, Square s) {
   pos->board[s] = p;
-  pos->pieces[p] |= SQUARE_TO_BITBOARD[s];
+  pos->pieces[PIECE_TO_COLOR[p]][PIECE_TO_TYPE[p]] |= SQUARE_TO_BITBOARD[s];
   pos->zobrist_hash ^= ZOBRIST_TABLE[p][s];
 }
 
@@ -53,7 +54,7 @@ inline void put_piece(Position *pos, Piece p, Square s) {
 // Assumes that the square contains that piece
 inline void remove_piece(Position *pos, Square s){
   pos->zobrist_hash ^= ZOBRIST_TABLE[pos->board[s]][s];
-  pos->pieces[pos->board[s]] &= ~SQUARE_TO_BITBOARD[s];
+  pos->pieces[PIECE_TO_COLOR[pos->board[s]]][PIECE_TO_TYPE[pos->board[s]]] &= ~SQUARE_TO_BITBOARD[s];
   pos->board[s] = NO_PIECE;
 }
 
@@ -65,8 +66,8 @@ inline void move_piece(Position *pos, Square from, Square to) {
     ZOBRIST_TABLE[pos->board[to]][to];
 
   U64 mask = SQUARE_TO_BITBOARD[from] | SQUARE_TO_BITBOARD[to];
-  pos->pieces[pos->board[from]] ^= mask;
-  pos->pieces[pos->board[to]] &= ~mask;
+  pos->pieces[PIECE_TO_COLOR[pos->board[from]]][PIECE_TO_TYPE[pos->board[from]]] ^= mask;
+  pos->pieces[PIECE_TO_COLOR[pos->board[to]]][PIECE_TO_TYPE[pos->board[to]]] &= ~mask;
   pos->board[to] = pos->board[from];
   pos->board[from] = NO_PIECE;
 }
@@ -77,7 +78,7 @@ inline void move_piece_quiet(Position *pos, Square from, Square to) {
   pos->zobrist_hash ^= ZOBRIST_TABLE[pos->board[from]][from] ^
     ZOBRIST_TABLE[pos->board[from]][to];
 
-  pos->pieces[pos->board[from]] ^= (SQUARE_TO_BITBOARD[from] | SQUARE_TO_BITBOARD[to]);
+  pos->pieces[PIECE_TO_COLOR[pos->board[from]]][PIECE_TO_TYPE[pos->board[from]]] ^= (SQUARE_TO_BITBOARD[from] | SQUARE_TO_BITBOARD[to]);
   pos->board[to] = pos->board[from];
   pos->board[from] = NO_PIECE;
 }
@@ -86,7 +87,7 @@ inline void move_piece_quiet(Position *pos, Square from, Square to) {
 void set_from_fen(Position *pos, const char *fen) {
 
   // Clear the board for the position
-  for (int i = 0; i < 12; i++) pos->pieces[i] = 0ULL;
+  for (int i = 0; i < 12; i++) pos->pieces[i / 6][i % 6] = 0ULL;
   for (int i = 0; i < 64; i++) pos->board[i] = NO_PIECE;
 
   // Clear position data

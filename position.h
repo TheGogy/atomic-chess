@@ -14,7 +14,7 @@ typedef struct undoinfo {
 } Undoinfo;
 
 typedef struct position {
-  U64 pieces[12];         // Occupancy boards for all pieces
+  U64 pieces[2][6];         // Occupancy boards for all pieces
   Piece board[64];        // Overall board state
   Color side_to_play;     // Marker for which side moves next
   int ply;                // Number of moves played

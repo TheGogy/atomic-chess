@@ -196,21 +196,33 @@ void undo(Position *pos, Color c, Move *m){
 // Generates all legal moves for the given position and increments pointer to
 // last move in move list
 Move* generate_legal_moves(Position *pos, Move *list) {
-  Color me = pos->side_to_play;
-  Color you = me ^ BLACK;
+  const Color me = pos->side_to_play;
+  const Color you = me ^ BLACK;
 
-  U64 my_king_bitboard = pos->pieces[me == WHITE ? WHITE_KING : BLACK_KING];
-  U64 your_king_bitboard = pos->pieces[you == WHITE ? WHITE_KING : BLACK_KING];
+  const U64 my_king = pos->pieces[me][KING];
+  const U64 your_king = pos->pieces[you][KING];
 
-  Square my_king_square = get_lsb_idx(my_king_bitboard);
-  Square your_king_square = get_lsb_idx(your_king_bitboard);
+  const Square my_king_square = get_lsb_idx(my_king);
+  const Square your_king_square = get_lsb_idx(your_king);
 
-  U64 all_my_pieces = get_all_pieces(pos, me);
-  U64 all_your_pieces = get_all_pieces(pos, you);
-  U64 your_orthogonal_sliders = get_orthogonal_sliders(pos, you);
-  U64 your_diagonal_sliders = get_diagonal_sliders(pos, you);
+  // All piece bitboards
+  const U64 my_pawns = pos->pieces[me][PAWN];
+  const U64 your_pawns = pos->pieces[you][PAWN];
+  const U64 my_knights = pos->pieces[me][KNIGHT];
+  const U64 your_knights = pos->pieces[you][KNIGHT];
+  const U64 my_bishops = pos->pieces[me][BISHOP];
+  const U64 your_bishops = pos->pieces[you][BISHOP];
+  const U64 my_rooks = pos->pieces[me][ROOK];
+  const U64 your_rooks = pos->pieces[you][ROOK];
+  const U64 my_queens = pos->pieces[me][QUEEN];
+  const U64 your_queens = pos->pieces[you][QUEEN];
 
-  U64 all_pieces = all_my_pieces | all_your_pieces;
+  const U64 all_my_pieces = my_pawns | my_knights | my_bishops | my_rooks | my_queens | my_king;
+  const U64 all_your_pieces = your_pawns | your_knights | your_bishops | your_rooks | your_queens | your_king;
+  const U64 your_orthogonal_sliders = your_rooks | your_queens;
+  const U64 your_diagonal_sliders = your_bishops | your_queens;
+
+  const U64 all_pieces = all_my_pieces | all_your_pieces;
 
   U64 orthogonal_pin = 0ULL;
   U64 diagonal_pin = 0ULL;
@@ -221,9 +233,9 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   U64 enpassant_target = SQUARE_TO_BITBOARD[pos->history[pos->ply].enpassant];
 
   // General purpose bitboards used for move generation
-  U64 b1, b2, b3, b4;
+  U64 b1, b2, b3;
 
-  // Generate rook pin masks
+  // Generate orthogonal pin masks
   if (PSEUDO_LEGAL_ATTACKS[ROOK][my_king_square] & your_orthogonal_sliders) {
     U64 attackHV = get_rook_attacks(my_king_square, all_pieces) & your_orthogonal_sliders;
     U64 pinsHV = get_xray_rook_lookups(my_king_square, all_pieces) & your_orthogonal_sliders;
@@ -235,7 +247,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     }
   }
 
-  // Generate bishop pin masks
+  // Generate diagonal pin masks
   if (PSEUDO_LEGAL_ATTACKS[BISHOP][my_king_square] & your_diagonal_sliders) {
     U64 attackD12 = get_bishop_attacks(my_king_square, all_pieces) & your_diagonal_sliders;
     U64 pinsD12 = get_xray_bishop_lookups(my_king_square, all_pieces) & your_diagonal_sliders;
@@ -248,16 +260,19 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     }
   }
 
+  // Generate knight pin masks
+  // We can only ever be in check from a single knight at once: This can only have a single bit set
+  checkmask |= PSEUDO_LEGAL_ATTACKS[KNIGHT][my_king_square] & your_knights;
+
   if (!checkmask) checkmask = 0xFFFFFFFFFFFFFFFF;
 
   const U64 moveable = ~all_my_pieces & checkmask;
 
   // Generate En Passant pin masks
   if (enpassant_target) {
-    const U64 my_pawns = pos->pieces[me == WHITE ? WHITE_PAWN : BLACK_PAWN];
     const U64 enpassant_rank = (me == WHITE ? WHITE_EP_RANK : BLACK_EP_RANK);
 
-    if ((enpassant_rank & my_king_bitboard) && (enpassant_rank & your_orthogonal_sliders) && (enpassant_rank & my_pawns)) {
+    if ((enpassant_rank & my_king) && (enpassant_rank & your_orthogonal_sliders) && (enpassant_rank & my_pawns)) {
       const U64 enpassant_left = my_pawns & ((enpassant_target & NOT_H_FILE) >> 1);
       const U64 enpassant_right = my_pawns & ((enpassant_target & NOT_A_FILE) << 1);
 
@@ -278,13 +293,13 @@ Move* generate_legal_moves(Position *pos, Move *list) {
 
   // Generate attacked squares and add them to the king ban
   // We can't use checkmask because it filters out attackers that cannot directly see king: king may walk into checks.
-  attacked |= get_all_knight_attacks(pos->pieces[you == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT]);
+  attacked |= get_all_knight_attacks(your_knights);
   attacked |= get_all_pawn_attacks(pos, you);
   attacked |= KING_ATTACKS[your_king_square];
   b1 = your_orthogonal_sliders;
   b2 = your_diagonal_sliders;
-  while (b1) attacked |= get_rook_attacks(pop_lsb(&b1), all_pieces ^ my_king_bitboard);
-  while (b2) attacked |= get_bishop_attacks(pop_lsb(&b2), all_pieces ^ my_king_bitboard);
+  while (b1) attacked |= get_rook_attacks(pop_lsb(&b1), all_pieces ^ my_king);
+  while (b2) attacked |= get_bishop_attacks(pop_lsb(&b2), all_pieces ^ my_king);
 
   // King can move to all squares except attacked ones / ones with our pieces
   b1 = KING_ATTACKS[my_king_square] & ~(all_my_pieces | attacked);
@@ -326,7 +341,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
 
   // Generate knight moves
   // Pinned knights can never move, prune them immediately
-  b1 = pos->pieces[me == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT] & ~(orthogonal_pin | diagonal_pin);
+  b1 = my_knights & ~(orthogonal_pin | diagonal_pin);
   while (b1) {
     Square s = pop_lsb(&b1);
     // Cannot capture our own pieces or make a move that does not stop a check (if check exists)
@@ -336,57 +351,93 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   }
 
   // Best to handle pinned queens with the bishops / rooks; the lookups are the same
-  b1 = pos->pieces[me == WHITE ? WHITE_QUEEN : BLACK_QUEEN];
-
   // Generate bishop moves
   // Orthogonally pinned bishops can never move: filter them out immediately
-  b2 = pos->pieces[me == WHITE ? WHITE_BISHOP : BLACK_BISHOP] & ~orthogonal_pin;
-  b3 = (b1 | b2) & diagonal_pin; // Diagonally pinned bishops and queens
-  while (b3) {
-    Square s = pop_lsb(&b3);
-    b4 = get_bishop_attacks(s, all_pieces) & moveable & diagonal_pin;
-    list = get_moves(s, b4 & ~all_your_pieces, list, QUIET);
-    list = get_moves(s, b4 & all_your_pieces, list, CAPTURE);
+  b1 = my_bishops & ~orthogonal_pin;
+  b2 = (my_queens | b2) & diagonal_pin; // Diagonally pinned bishops and queens
+  while (b2) {
+    Square s = pop_lsb(&b2);
+    b3 = get_bishop_attacks(s, all_pieces) & moveable & diagonal_pin;
+    list = get_moves(s, b3 & ~all_your_pieces, list, QUIET);
+    list = get_moves(s, b3 & all_your_pieces, list, CAPTURE);
   }
 
-  b3 = b2 & ~diagonal_pin; // Non pinned bishops
-  while (b3) {
-    Square s = pop_lsb(&b3);
-    b4 = get_bishop_attacks(s, all_pieces) & moveable;
-    list = get_moves(s, b4 & ~all_your_pieces, list, QUIET);
-    list = get_moves(s, b4 & all_your_pieces, list, CAPTURE);
+  b2 = b1 & ~diagonal_pin; // Non pinned bishops
+  while (b2) {
+    Square s = pop_lsb(&b2);
+    b3 = get_bishop_attacks(s, all_pieces) & moveable;
+    list = get_moves(s, b3 & ~all_your_pieces, list, QUIET);
+    list = get_moves(s, b3 & all_your_pieces, list, CAPTURE);
   }
 
   // Generate rook moves
   // Diagonally pinned rooks can never move: filter them out immediately
-  b2 = pos->pieces[me == WHITE ? WHITE_ROOK : BLACK_ROOK] & ~diagonal_pin;
-  b3 = (b1 | b2) & orthogonal_pin; // Orthogonally pinned rooks and queens
-  while (b3) {
-    Square s = pop_lsb(&b3);
-    b4 = get_rook_attacks(s, all_pieces) & moveable & orthogonal_pin;
-    list = get_moves(s, b4 & ~all_your_pieces, list, QUIET);
-    list = get_moves(s, b4 & all_your_pieces, list, CAPTURE);
+  b1 = my_rooks & ~diagonal_pin;
+  b2 = (my_queens | b1) & orthogonal_pin; // Orthogonally pinned rooks and queens
+  while (b2) {
+    Square s = pop_lsb(&b2);
+    b3 = get_rook_attacks(s, all_pieces) & moveable & orthogonal_pin;
+    list = get_moves(s, b3 & ~all_your_pieces, list, QUIET);
+    list = get_moves(s, b3 & all_your_pieces, list, CAPTURE);
   }
 
-  b3 = b2 & ~orthogonal_pin; // Non pinned rooks
-  while (b3) {
-    Square s = pop_lsb(&b3);
-    b4 = get_rook_attacks(s, all_pieces) & moveable;
-    list = get_moves(s, b4 & ~all_your_pieces, list, QUIET);
-    list = get_moves(s, b4 & all_your_pieces, list, CAPTURE);
+  b2 = b1 & ~orthogonal_pin; // Non pinned rooks
+  while (b2) {
+    Square s = pop_lsb(&b2);
+    b3 = get_rook_attacks(s, all_pieces) & moveable;
+    list = get_moves(s, b3 & ~all_your_pieces, list, QUIET);
+    list = get_moves(s, b3 & all_your_pieces, list, CAPTURE);
   }
 
   // Generate queen moves
-  // Pinned queens have already been handled with the above lookups: 
+  // Pinned queens have already been handled with the above lookups;
   // we only need to handle the non-pinned ones
-  b1 &= ~(orthogonal_pin | diagonal_pin);
+  b1 &= ~(orthogonal_pin | diagonal_pin); // b1 already contains queen moves
   while (b1) {
     Square s = pop_lsb(&b1);
-    b2 = get_queen_attacks(s, all_pieces);
+    b2 = get_queen_attacks(s, all_pieces) & moveable;
     list = get_moves(s, b2 & ~all_your_pieces, list, QUIET);
     list = get_moves(s, b2 & all_your_pieces, list, CAPTURE);
   }
 
+  // Generate pawn moves
+  // Horizontally pinned pawns can never move: filter them out immediately
+  b1 = my_pawns & ~(orthogonal_pin & RANK_MASKS[my_king_square / 8]);
+
+  // Horizontally pins have been filtered: This is only vertically pinned pawns
+  // Vertically pinned pawns cannot take, only push.
+  // Vertically pinned pawns also cannot promote: either the king, or the piece pinning them,
+  // will always block the promotion square.
+  b2 = b1 & orthogonal_pin;
+  b3 = b2 & (me == WHITE ? WHITE_DOUBLE_PUSH_RANK : BLACK_DOUBLE_PUSH_RANK);
+  while (b2) {
+    Square s = pop_lsb(&b2);
+    U64 move = (me == WHITE ? (SQUARE_TO_BITBOARD[s] << 8) : (SQUARE_TO_BITBOARD[s] >> 8)) & moveable;
+
+    // We don't need to include captures here; pawns capture diagonally
+    list = get_moves(s, move, list, QUIET);
+  }
+  while (b3) {
+    Square s = pop_lsb(&b3);
+    U64 move = (me == WHITE ? (SQUARE_TO_BITBOARD[s] << 8) : (SQUARE_TO_BITBOARD[s] >> 8)) & moveable;
+
+    // We don't need to include captures here; pawns capture diagonally
+    list = get_moves(s, move, list, QUIET);
+    move = (me == WHITE ? (SQUARE_TO_BITBOARD[s] << 16) : (SQUARE_TO_BITBOARD[s] >> 16)) & moveable;
+    list = get_moves(s, move, list, DOUBLE_PUSH);
+  }
+
+  // // All other pawns
+  // b2 = b1 & ~orthogonal_pin;
+  // b3 = b2 & (me == WHITE ? WHITE_DOUBLE_PUSH_RANK : BLACK_DOUBLE_PUSH_RANK);
+  //
+  // while (b2) {
+  //   Square s = pop_lsb(&b2);
+  //   // All quiet moves, pushing one square forward
+  //   U64 move = me == WHITE ? (SQUARE_TO_BITBOARD[s] << 8) : (SQUARE_TO_BITBOARD[s] >> 8) & moveable;
+  //   list = get_moves(s, move, list, QUIET);
+  // }
+  
 
   return list;
 }

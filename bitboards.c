@@ -62,6 +62,39 @@ const char* SQUARE_TO_STRING[65] = {
   "None"
 };
 
+const Color PIECE_TO_COLOR[] = {
+  [WHITE_PAWN]   = WHITE,
+  [WHITE_KNIGHT] = WHITE,
+  [WHITE_BISHOP] = WHITE,
+  [WHITE_ROOK]   = WHITE,
+  [WHITE_QUEEN]  = WHITE,
+  [WHITE_KING]   = WHITE,
+  [BLACK_PAWN]   = BLACK,
+  [BLACK_KNIGHT] = BLACK,
+  [BLACK_BISHOP] = BLACK,
+  [BLACK_ROOK]   = BLACK,
+  [BLACK_QUEEN]  = BLACK,
+  [BLACK_KING]   = BLACK,
+  [NO_PIECE]     = NO_COLOR
+};
+
+const Piecetype PIECE_TO_TYPE[] = {
+  [WHITE_PAWN]   = PAWN,
+  [WHITE_KNIGHT] = KNIGHT,
+  [WHITE_BISHOP] = BISHOP,
+  [WHITE_ROOK]   = ROOK,
+  [WHITE_QUEEN]  = QUEEN,
+  [WHITE_KING]   = KING,
+  [BLACK_PAWN]   = PAWN,
+  [BLACK_KNIGHT] = KNIGHT,
+  [BLACK_BISHOP] = BISHOP,
+  [BLACK_ROOK]   = ROOK,
+  [BLACK_QUEEN]  = QUEEN,
+  [BLACK_KING]   = KING,
+  [NO_PIECE]     = NO_TYPE
+};
+
+
 const Piece CHAR_TO_PIECE[] = {
   ['P'] = WHITE_PAWN,
   ['N'] = WHITE_KNIGHT,
