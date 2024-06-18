@@ -44,8 +44,8 @@ inline Move* get_moves(Square from, U64 to, Move *list, MoveFlag flags) {
   return list;
 }
 
-void play(Position *pos, Color c, Move *m);
-void undo(Position *pos, Color c, Move *m);
+void play(Position *pos, Move *m);
+void undo(Position *pos, Move *m);
 
 Move* generate_legal_moves(Position *pos, Move *list);
 

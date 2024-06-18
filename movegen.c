@@ -4,7 +4,9 @@
 #include "tables.h"
 
 // Plays a move in the given position
-void play(Position *pos, Color c, Move *m){
+void play(Position *pos, Move *m){
+  Color c = pos->side_to_play;
+
   // Switch side to play
   pos->side_to_play ^= BLACK;
 
@@ -124,7 +126,8 @@ void play(Position *pos, Color c, Move *m){
 }
 
 // Undoes the given move in the given position
-void undo(Position *pos, Color c, Move *m){
+void undo(Position *pos, Move *m){
+  Color c = pos->side_to_play;
   switch (m->flags) {
     case QUIET:
       // Move without taking any pieces
