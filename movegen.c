@@ -62,25 +62,25 @@ void play(Position *pos, Color c, Move *m){
     case PR_KNIGHT:
       // Promoting to a knight
       remove_piece(pos, m->from);
-      put_piece(pos, (c == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT), m->to);
+      put_piece(pos, KNIGHT, c, m->to);
       break;
 
     case PR_BISHOP:
       // Promoting to a bishop
       remove_piece(pos, m->from);
-      put_piece(pos, (c == WHITE ? WHITE_BISHOP : BLACK_BISHOP), m->to);
+      put_piece(pos, BISHOP, c, m->to);
       break;
 
     case PR_ROOK:
       // Promoting to a rook
       remove_piece(pos, m->from);
-      put_piece(pos, (c == WHITE ? WHITE_ROOK : BLACK_ROOK), m->to);
+      put_piece(pos, ROOK, c, m->to);
       break;
 
     case PR_QUEEN:
       // Promoting to a queen
       remove_piece(pos, m->from);
-      put_piece(pos, (c == WHITE ? WHITE_QUEEN : BLACK_QUEEN), m->to);
+      put_piece(pos, QUEEN, c, m->to);
       break;
 
     case PC_KNIGHT:
@@ -88,7 +88,7 @@ void play(Position *pos, Color c, Move *m){
       remove_piece(pos, m->from);
       pos->history[pos->ply].captured = pos->board[m->to];
       remove_piece(pos, m->to);
-      put_piece(pos, (c == WHITE ? WHITE_KNIGHT : BLACK_KNIGHT), m->to);
+      put_piece(pos, KNIGHT, c, m->to);
       break;
 
     case PC_BISHOP:
@@ -96,7 +96,7 @@ void play(Position *pos, Color c, Move *m){
       remove_piece(pos, m->from);
       pos->history[pos->ply].captured = pos->board[m->to];
       remove_piece(pos, m->to);
-      put_piece(pos, (c == WHITE ? WHITE_BISHOP : BLACK_BISHOP), m->to);
+      put_piece(pos, BISHOP, c, m->to);
       break;
 
     case PC_ROOK:
@@ -104,7 +104,7 @@ void play(Position *pos, Color c, Move *m){
       remove_piece(pos, m->from);
       pos->history[pos->ply].captured = pos->board[m->to];
       remove_piece(pos, m->to);
-      put_piece(pos, (c == WHITE ? WHITE_ROOK : BLACK_ROOK), m->to);
+      put_piece(pos, ROOK, c, m->to);
       break;
 
     case PC_QUEEN:
@@ -112,7 +112,7 @@ void play(Position *pos, Color c, Move *m){
       remove_piece(pos, m->from);
       pos->history[pos->ply].captured = pos->board[m->to];
       remove_piece(pos, m->to);
-      put_piece(pos, (c == WHITE ? WHITE_QUEEN : BLACK_QUEEN), m->to);
+      put_piece(pos, QUEEN, c, m->to);
       break;
 
     case CAPTURE:
@@ -161,7 +161,7 @@ void undo(Position *pos, Color c, Move *m){
     case EN_PASSANT:
       // Capturing en passant
       move_piece_quiet(pos, m->to, m->from);
-      put_piece(pos, (c == WHITE ? BLACK_PAWN : WHITE_PAWN), (c == WHITE ? -8 : 8));
+      put_piece(pos, PAWN, c, (c == WHITE ? -8 : 8));
       break;
 
     // Promoting to the given piece
@@ -170,7 +170,7 @@ void undo(Position *pos, Color c, Move *m){
     case PR_ROOK:
     case PR_QUEEN:
       remove_piece(pos, m->to);
-      put_piece(pos, (c == WHITE? WHITE_PAWN : BLACK_PAWN), m->from);
+      put_piece(pos, PAWN, c, m->from);
       break;
 
     // Promoting to the given piece through a capture
@@ -179,14 +179,18 @@ void undo(Position *pos, Color c, Move *m){
     case PC_ROOK:
     case PC_QUEEN:
       remove_piece(pos, m->to);
-      put_piece(pos, (c == WHITE? WHITE_PAWN : BLACK_PAWN), m->from);
-      put_piece(pos, pos->history[pos->ply].captured, m->to);
+      put_piece(pos, PAWN, c, m->from);
+
+      Piece pr_captured = pos->history[pos->ply].captured;
+      put_piece(pos, PIECE_TO_TYPE[pr_captured], PIECE_TO_COLOR[pr_captured], m->to);
       break;
 
     case CAPTURE:
       // Capturing piece
       move_piece_quiet(pos, m->to, m->from);
-      put_piece(pos, pos->history[pos->ply].captured, m->to);
+
+      Piece captured = pos->history[pos->ply].captured;
+      put_piece(pos, PIECE_TO_TYPE[captured], PIECE_TO_COLOR[captured], m->to);
       break;
   }
   pos->side_to_play ^= BLACK;
@@ -279,7 +283,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
 
   const U64 moveable = ~all_my_pieces & checkmask;
 
-  // Generate En Passant pin masks
+  // Generate En Passant targets
   if (enpassant_target) {
 
     if ((my_enpassant_rank & my_king) && (my_enpassant_rank & your_orthogonal_sliders) && (my_enpassant_rank & my_pawns)) {
@@ -397,7 +401,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   // Generate queen moves
   // Pinned queens have already been handled with the above lookups;
   // we only need to handle the non-pinned ones
-  b1 &= ~(orthogonal_pin | diagonal_pin); // b1 already contains queen moves
+  b1 &= ~(orthogonal_pin | diagonal_pin); // b1 already contains queen moves: This is all non pinned queens
   while (b1) {
     Square s = pop_lsb(&b1);
     b2 = get_queen_attacks(s, all_pieces) & moveable;
@@ -419,65 +423,177 @@ Move* generate_legal_moves(Position *pos, Move *list) {
 
   b2 = b1 & orthogonal_pin;
   b3 = b2 & my_double_push_rank;
-  b2 ^= b3;
+  b2 ^= b3; // Do not double count the pawns
+
+  // All other vertically pinned pawns
   while (b2) {
     Square from = pop_lsb(&b2);
-    Square to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable);
-
-    // We don't need to include captures here; pawns capture diagonally
-    Move move = {
-      .flags = QUIET,
-      .from = from,
-      .to = to
-    };
-    *list++ = move;
+    Move move = {.flags = QUIET, .from = from};
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      *list++ = move;
+    }
   }
 
-  // Same as above but these pawns can also double push
+  // All vertically pinned pawns that can double push
   while (b3) {
     Square from = pop_lsb(&b3);
-    Square to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable);
-    Move move = {
-      .flags = QUIET,
-      .from = from,
-      .to = to
-    };
-    *list++ = move;
-    to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 16) : (SQUARE_TO_BITBOARD[from] >> 16)) & moveable);
-    move.to = to;
-    move.flags = DOUBLE_PUSH;
-    *list++ = move;
+    Move move = {.flags = QUIET, .from = from};
+    // Single push
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      *list++ = move;
+    }
+
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 16) : (SQUARE_TO_BITBOARD[from] >> 16)) & moveable;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      *list++ = move;
+    }
   }
 
   // All other pawns
   b2 = b1 & ~orthogonal_pin;
   b3 = b2 & my_double_push_rank;
-  b2 ^= b3;
-  while (b2) {
-    Square from = pop_lsb(&b2);
-    Square to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable);
-    Move move = {
-      .flags = QUIET,
-      .from = from,
-      .to = to
-    };
-    *list++ = move;
-  }
+  b2 ^= b3; // Do not double count the pawns
 
-  // Same as above but these pawns can also double push
+  // All other pawns that can double push (As they can double push, they must not be able to promote)
   while (b3) {
     Square from = pop_lsb(&b3);
-    Square to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable);
-    Move move = {
-      .flags = QUIET,
-      .from = from,
-      .to = to
-    };
-    *list++ = move;
-    to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 16) : (SQUARE_TO_BITBOARD[from] >> 16)) & moveable);
-    move.to = to;
-    move.flags = DOUBLE_PUSH;
-    *list++ = move;
+
+    Move move = {.flags = QUIET, .from = from};
+
+    // Single push
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      *list++ = move;
+    }
+
+    // Double push
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 16) : (SQUARE_TO_BITBOARD[from] >> 16)) & moveable;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = DOUBLE_PUSH;
+      *list++ = move;
+    }
+
+    // Capture right
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 9) : (SQUARE_TO_BITBOARD[from] >> 7)) & moveable & all_your_pieces;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = CAPTURE;
+      *list++ = move;
+    }
+
+    // Capture left
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 7) : (SQUARE_TO_BITBOARD[from] >> 9)) & moveable & all_your_pieces;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = CAPTURE;
+      *list++ = move;
+    }
+  }
+
+  // All my pawns that can promote
+  b3 = b2 & my_promotion_rank;
+  b2 ^= b3; // Do not double count the pawns
+  while (b3) {
+    Square from = pop_lsb(&b3);
+
+    Move move = {.flags = QUIET, .from = from};
+
+    // Push
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = PR_KNIGHT;
+      *list++ = move;
+      move.flags = PR_BISHOP;
+      *list++ = move;
+      move.flags = PR_ROOK;
+      *list++ = move;
+      move.flags = PR_QUEEN;
+      *list++ = move;
+    }
+
+    // Capture right
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 9) : (SQUARE_TO_BITBOARD[from] >> 7)) & moveable & all_your_pieces;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = PC_KNIGHT;
+      *list++ = move;
+      move.flags = PC_BISHOP;
+      *list++ = move;
+      move.flags = PC_ROOK;
+      *list++ = move;
+      move.flags = PC_QUEEN;
+      *list++ = move;
+    }
+
+    // Capture left
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 7) : (SQUARE_TO_BITBOARD[from] >> 9)) & moveable & all_your_pieces;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = PC_KNIGHT;
+      *list++ = move;
+      move.flags = PC_BISHOP;
+      *list++ = move;
+      move.flags = PC_ROOK;
+      *list++ = move;
+      move.flags = PC_QUEEN;
+      *list++ = move;
+    }
+  }
+
+  // All the remaining pawns
+  while (b2) {
+    Square from = pop_lsb(&b2);
+
+    Move move = {.flags = QUIET, .from = from};
+
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      *list++ = move;
+    }
+
+    // Capture right
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 9) : (SQUARE_TO_BITBOARD[from] >> 7)) & moveable & all_your_pieces;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = CAPTURE;
+      *list++ = move;
+    }
+
+    // Capture left
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 7) : (SQUARE_TO_BITBOARD[from] >> 9)) & moveable & all_your_pieces;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = CAPTURE;
+      *list++ = move;
+    }
+  }
+
+  // Add en passant moves if they exist
+  // We have already pruned out all pins; enpassant_target would be empty if en passant piece has been pinned
+  if (enpassant_target) {
+    Square to = get_lsb_idx(enpassant_target);
+    Move move = {.flags = EN_PASSANT, .to = to};
+    // Capture right
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[to] >> 9) : (SQUARE_TO_BITBOARD[to] << 7)) & my_pawns;
+    if (target_bb) {
+      move.from = get_lsb_idx(target_bb);
+      *list++ = move;
+    }
+    // Capture left
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[to] >> 7) : (SQUARE_TO_BITBOARD[to] << 9)) & my_pawns;
+    if (target_bb) {
+      move.from = get_lsb_idx(target_bb);
+      *list++ = move;
+    }
   }
 
   return list;

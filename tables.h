@@ -10,8 +10,7 @@
 // using these.
 extern const U64 KING_ATTACKS[64];
 extern const U64 KNIGHT_ATTACKS[64];
-extern const U64 WHITE_PAWN_ATTACKS[64];
-extern const U64 BLACK_PAWN_ATTACKS[64];
+extern U64 PAWN_ATTACKS[2][64];
 
 // Bitboard of all squares between two pieces (not including squares themselves)
 extern U64 SQUARES_BETWEEN[64][64];

@@ -50,7 +50,7 @@ extern U64 ZOBRIST_TABLE[6][64];
 
 void init_zobrist_table();
 
-void put_piece(Position *pos, Piece p, Square s);
+void put_piece(Position *pos, Piecetype pt, Color col, Square s);
 void remove_piece(Position *pos, Square s);
 void move_piece(Position *pos, Square from, Square to);
 void move_piece_quiet(Position *pos, Square from, Square to);

@@ -94,6 +94,26 @@ const Piecetype PIECE_TO_TYPE[] = {
   [NO_PIECE]     = NO_TYPE
 };
 
+const Piece TYPE_TO_PIECE[2][6] = {
+  // WHITE pieces
+  {
+    WHITE_PAWN,
+    WHITE_KNIGHT,
+    WHITE_BISHOP,
+    WHITE_ROOK,
+    WHITE_QUEEN,
+    WHITE_KING
+  },
+  // BLACK pieces
+  {
+    BLACK_PAWN,
+    BLACK_KNIGHT,
+    BLACK_BISHOP,
+    BLACK_ROOK,
+    BLACK_QUEEN,
+    BLACK_KING
+  }
+};
 
 const Piece CHAR_TO_PIECE[] = {
   ['P'] = WHITE_PAWN,

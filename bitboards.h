@@ -19,13 +19,14 @@ inline int pop_lsb(U64 *bitboard) {
 }
 
 typedef enum color {WHITE, BLACK, NO_COLOR} Color;
+
 typedef enum piecetype {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NO_TYPE} Piecetype;
+
 typedef enum piece {
   WHITE_PAWN, WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN, WHITE_KING,
   BLACK_PAWN, BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN, BLACK_KING,
   NO_PIECE
 } Piece;
-
 
 typedef enum square {
 	a1, b1, c1, d1, e1, f1, g1, h1,
@@ -48,6 +49,7 @@ extern const U64 SQUARE_TO_BITBOARD[65];
 extern const char* SQUARE_TO_STRING[65];
 extern const Color PIECE_TO_COLOR[];
 extern const Piecetype PIECE_TO_TYPE[];
+extern const Piece TYPE_TO_PIECE[2][6];
 extern const Piece CHAR_TO_PIECE[];
 extern const char PIECE_TO_CHAR[];
 extern const char *MOVETYPE_TO_STR[];

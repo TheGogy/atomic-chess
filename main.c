@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
   init_zobrist_table();
 
   Position pos;
-  set_from_fen(&pos, "7k/8/8/7r/8/8/3P4/3K4 w - - 0 1");
+  set_from_fen(&pos, "5k2/8/8/2PpP3/1K6/8/8/8 w - d6 0 1");
   print_position(&pos);
   Move move_list[218];
   Move *last = generate_legal_moves(&pos, move_list);

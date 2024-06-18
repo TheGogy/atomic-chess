@@ -37,14 +37,13 @@ void init_zobrist_table() {
 }
 
 // Adds the specifiec piece to the specified square
-inline void put_piece(Position *pos, Piece p, Square s) {
-  pos->board[s] = p;
-  pos->pieces[PIECE_TO_COLOR[p]][PIECE_TO_TYPE[p]] |= SQUARE_TO_BITBOARD[s];
-  pos->zobrist_hash ^= ZOBRIST_TABLE[p][s];
+inline void put_piece(Position *pos, Piecetype pt, Color col, Square s) {
+  pos->board[s] = TYPE_TO_PIECE[col][pt];
+  pos->pieces[col][pt] |= SQUARE_TO_BITBOARD[s];
+  pos->zobrist_hash ^= ZOBRIST_TABLE[pt][s];
 }
 
 // Removes the given piece from the specified Square
-// Assumes that the square contains that piece
 inline void remove_piece(Position *pos, Square s){
   pos->zobrist_hash ^= ZOBRIST_TABLE[pos->board[s]][s];
   pos->pieces[PIECE_TO_COLOR[pos->board[s]]][PIECE_TO_TYPE[pos->board[s]]] &= ~SQUARE_TO_BITBOARD[s];
@@ -106,7 +105,8 @@ void set_from_fen(Position *pos, const char *fen) {
       // Go to start of line above
       square -= 16;
     } else {
-      put_piece(pos, CHAR_TO_PIECE[c], square++);
+      Piece p = CHAR_TO_PIECE[c];
+      put_piece(pos, PIECE_TO_TYPE[p], PIECE_TO_COLOR[p], square++);
     }
   }
 
