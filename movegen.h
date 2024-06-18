@@ -34,10 +34,11 @@ typedef struct move {
 
 inline Move* get_moves(Square from, U64 to, Move *list, MoveFlag flags) {
   while (to) {
-    Move move;
-    move.flags = flags;
-    move.from = from;
-    move.to = (Square)pop_lsb(&to);
+    Move move = {
+      .flags = flags,
+      .from = from,
+      .to = (Square)pop_lsb(&to)
+    };
     *list++ = move;
   }
   return list;

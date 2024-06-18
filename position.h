@@ -27,25 +27,19 @@ typedef struct position {
 } Position;
 
 // Castling masks
-extern const U64 WHITE_OO_MASK;
-extern const U64 WHITE_OOO_MASK;
-extern const U64 WHITE_OO_BLOCKERS_MASK;
-extern const U64 WHITE_OOO_BLOCKERS_MASK;
-extern const U64 WHITE_OOO_IGNORE_DANGER;
-extern const U64 BLACK_OO_MASK;
-extern const U64 BLACK_OOO_MASK;
-extern const U64 BLACK_OO_BLOCKERS_MASK;
-extern const U64 BLACK_OOO_BLOCKERS_MASK;
-extern const U64 BLACK_OOO_IGNORE_DANGER;
+extern const U64 OO_MASK[2];
+extern const U64 OOO_MASK[2];
+extern const U64 OO_BLOCKERS_MASK[2];
+extern const U64 OOO_BLOCKERS_MASK[2];
+extern const U64 OOO_IGNORE_DANGER[2];
+
 extern const U64 ALL_CASTLING_MASK;
 
 // En passant ranks
-extern const U64 WHITE_EP_RANK;
-extern const U64 BLACK_EP_RANK;
+extern const U64 EP_RANK[2];
 
 // Rank of first pawn (so that the pawns can be double pushed)
-extern const U64 WHITE_DOUBLE_PUSH_RANK;
-extern const U64 BLACK_DOUBLE_PUSH_RANK;
+extern const U64 DOUBLE_PUSH_RANK[2];
 
 extern const U64 NOT_A_FILE;
 extern const U64 NOT_H_FILE;

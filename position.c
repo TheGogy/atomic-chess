@@ -3,23 +3,16 @@
 #include <ctype.h>
 #include <stdio.h>
 
-const U64 WHITE_OO_MASK = 0x90ULL;
-const U64 WHITE_OOO_MASK = 0x11ULL;
-const U64 WHITE_OO_BLOCKERS_MASK = 0x60ULL;
-const U64 WHITE_OOO_BLOCKERS_MASK = 0xEULL;
-const U64 WHITE_OOO_IGNORE_DANGER = 0xFFFFFFFFFFFFFFFDULL;
-const U64 BLACK_OO_MASK = 0x9000000000000000ULL;
-const U64 BLACK_OOO_MASK = 0x1100000000000000ULL;
-const U64 BLACK_OO_BLOCKERS_MASK = 0x6000000000000000ULL;
-const U64 BLACK_OOO_BLOCKERS_MASK = 0xE00000000000000ULL;
-const U64 BLACK_OOO_IGNORE_DANGER = 0xFDFFFFFFFFFFFFFFULL;
+const U64 OO_MASK[2] = {0x90ULL, 0x9000000000000000ULL};
+const U64 OOO_MASK[2] = {0x11ULL, 0x1100000000000000ULL};
+const U64 OO_BLOCKERS_MASK[2] = {0x60ULL, 0x6000000000000000ULL};
+const U64 OOO_BLOCKERS_MASK[2] = {0xEULL, 0xE00000000000000ULL};
+const U64 OOO_IGNORE_DANGER[2] = {0xFFFFFFFFFFFFFFFDULL, 0xFDFFFFFFFFFFFFFFULL};
+
+const U64 DOUBLE_PUSH_RANK[2] = {0xFF00ULL, 0xFF000000000000ULL};
+const U64 EP_RANK[2] = {0xFF00000000ULL, 0xFF000000ULL};
+
 const U64 ALL_CASTLING_MASK = 0x9100000000000091ULL;
-
-const U64 WHITE_EP_RANK = 0xFF00000000ULL;
-const U64 BLACK_EP_RANK = 0xFF000000ULL;
-
-const U64 WHITE_DOUBLE_PUSH_RANK = 0xFF00ULL;
-const U64 BLACK_DOUBLE_PUSH_RANK = 0xFF000000000000ULL;
 
 const U64 NOT_A_FILE = 18374403900871474942ULL;
 const U64 NOT_H_FILE = 9187201950435737471ULL;
@@ -134,19 +127,19 @@ void set_from_fen(Position *pos, const char *fen) {
   while (*fen_ptr && !isspace(*fen_ptr)) {
     switch (*fen_ptr) {
       case 'K':
-        pos->history[0].entry &= ~WHITE_OO_MASK;
+        pos->history[0].entry &= ~OO_MASK[WHITE];
         break;
 
       case 'Q':
-        pos->history[0].entry &= ~WHITE_OOO_MASK;
+        pos->history[0].entry &= ~OOO_MASK[WHITE];
         break;
 
       case 'k':
-        pos->history[0].entry &= ~BLACK_OO_MASK;
+        pos->history[0].entry &= ~OO_MASK[BLACK];
         break;
 
       case 'q':
-        pos->history[0].entry &= ~BLACK_OOO_MASK;
+        pos->history[0].entry &= ~OOO_MASK[BLACK];
         break;
     }
     fen_ptr++;
@@ -190,11 +183,11 @@ void get_fen_from_pos(Position *pos, char *fen){
   index += sprintf(&fen[index], " %s", pos->side_to_play == WHITE ? "w " : "b ");
 
   // Castling rights
-  if (!(pos->history[pos->ply].entry & WHITE_OO_MASK   )) index += sprintf(&fen[index], "K");
-  if (!(pos->history[pos->ply].entry & WHITE_OOO_MASK  )) index += sprintf(&fen[index], "Q");
-  if (!(pos->history[pos->ply].entry & BLACK_OO_MASK   )) index += sprintf(&fen[index], "k");
-  if (!(pos->history[pos->ply].entry & BLACK_OOO_MASK  )) index += sprintf(&fen[index], "q");
-  if (  pos->history[pos->ply].entry & ALL_CASTLING_MASK) index += sprintf(&fen[index], "- ");
+  if (!(pos->history[pos->ply].entry & OO_MASK[WHITE]   )) index += sprintf(&fen[index], "K");
+  if (!(pos->history[pos->ply].entry & OOO_MASK[WHITE]  )) index += sprintf(&fen[index], "Q");
+  if (!(pos->history[pos->ply].entry & OO_MASK[BLACK]   )) index += sprintf(&fen[index], "k");
+  if (!(pos->history[pos->ply].entry & OOO_MASK[BLACK]  )) index += sprintf(&fen[index], "q");
+  if (  pos->history[pos->ply].entry & ALL_CASTLING_MASK ) index += sprintf(&fen[index], "- ");
 
   // En passant square
   Square enpassant_square = pos->history[pos->ply].enpassant;
@@ -216,10 +209,10 @@ void print_position(Position *pos) {
   printf("Side to move:       %s\n", pos->side_to_play ? "black" : "white");
   printf("En passant square:  %s\n", SQUARE_TO_STRING[pos->history[pos->ply].enpassant]);
   printf("Castling rights:    %c%c%c%c\n",
-         pos->history[pos->ply].entry & WHITE_OO_MASK  ? '-' : 'K',
-         pos->history[pos->ply].entry & WHITE_OOO_MASK ? '-' : 'Q',
-         pos->history[pos->ply].entry & BLACK_OO_MASK  ? '-' : 'k',
-         pos->history[pos->ply].entry & BLACK_OOO_MASK ? '-' : 'q'
+         pos->history[pos->ply].entry & OO_MASK[WHITE]  ? '-' : 'K',
+         pos->history[pos->ply].entry & OOO_MASK[WHITE] ? '-' : 'Q',
+         pos->history[pos->ply].entry & OO_MASK[BLACK]  ? '-' : 'k',
+         pos->history[pos->ply].entry & OOO_MASK[BLACK] ? '-' : 'q'
          );
   printf("Zobrist hash:       %llu\n", pos->zobrist_hash);
   printf("Ply:                %d\n", pos->ply);

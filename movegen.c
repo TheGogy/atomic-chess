@@ -224,6 +224,17 @@ Move* generate_legal_moves(Position *pos, Move *list) {
 
   const U64 all_pieces = all_my_pieces | all_your_pieces;
 
+  const U64 my_double_push_rank = DOUBLE_PUSH_RANK[me];
+  const U64 my_promotion_rank = DOUBLE_PUSH_RANK[you];
+  const U64 my_enpassant_rank = EP_RANK[me];
+
+  const U64 my_oo_mask = OO_MASK[me];
+  const U64 my_oo_blocker_mask = OO_BLOCKERS_MASK[me];
+
+  const U64 my_ooo_mask = OOO_MASK[me];
+  const U64 my_ooo_blocker_mask = OOO_BLOCKERS_MASK[me];
+  const U64 my_ooo_ignore_danger = OOO_IGNORE_DANGER[me];
+
   U64 orthogonal_pin = 0ULL;
   U64 diagonal_pin = 0ULL;
 
@@ -270,21 +281,20 @@ Move* generate_legal_moves(Position *pos, Move *list) {
 
   // Generate En Passant pin masks
   if (enpassant_target) {
-    const U64 enpassant_rank = (me == WHITE ? WHITE_EP_RANK : BLACK_EP_RANK);
 
-    if ((enpassant_rank & my_king) && (enpassant_rank & your_orthogonal_sliders) && (enpassant_rank & my_pawns)) {
+    if ((my_enpassant_rank & my_king) && (my_enpassant_rank & your_orthogonal_sliders) && (my_enpassant_rank & my_pawns)) {
       const U64 enpassant_left = my_pawns & ((enpassant_target & NOT_H_FILE) >> 1);
       const U64 enpassant_right = my_pawns & ((enpassant_target & NOT_A_FILE) << 1);
 
       if (enpassant_left) {
         const U64 occ_without_ep = all_pieces & ~(enpassant_target | enpassant_left);
-        if ((get_rook_attacks(my_king_square, occ_without_ep) & enpassant_rank) & your_orthogonal_sliders) {
+        if ((get_rook_attacks(my_king_square, occ_without_ep) & my_enpassant_rank) & your_orthogonal_sliders) {
           enpassant_target = 0ULL;
         }
       }
       if (enpassant_right) {
         const U64 occ_without_ep = all_pieces & ~(enpassant_target | enpassant_right);
-        if ((get_rook_attacks(my_king_square, occ_without_ep) & enpassant_rank) & your_orthogonal_sliders) {
+        if ((get_rook_attacks(my_king_square, occ_without_ep) & my_enpassant_rank) & your_orthogonal_sliders) {
           enpassant_target = 0ULL;
         }
       }
@@ -307,9 +317,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   list = get_moves(my_king_square, b1 & all_your_pieces, list, CAPTURE);
 
   // Generate kingside castling moves
-  b1 = me == WHITE ? WHITE_OO_MASK : BLACK_OO_MASK;
-  b2 = me == WHITE ? WHITE_OO_BLOCKERS_MASK : BLACK_OO_BLOCKERS_MASK;
-  if (!((pos->history[pos->ply].entry & b1) | ((all_pieces | attacked) & b2))) {
+  if (!((pos->history[pos->ply].entry & my_oo_mask) | ((all_pieces | attacked) & my_oo_blocker_mask))) {
     Move m;
     m.flags = OO;
     if (me == WHITE) {
@@ -323,10 +331,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   }
 
   // Generate queenside castling moves
-  b1 = me == WHITE ? WHITE_OOO_MASK : BLACK_OOO_MASK;
-  b2 = me == WHITE ? WHITE_OOO_BLOCKERS_MASK : BLACK_OOO_BLOCKERS_MASK;
-  b3 = me == WHITE ? WHITE_OOO_IGNORE_DANGER : BLACK_OOO_IGNORE_DANGER;
-  if (!((pos->history[pos->ply].entry & b1) | ((all_pieces | (attacked & b3)) & b2))) {
+  if (!((pos->history[pos->ply].entry & my_ooo_mask) | ((all_pieces | (attacked & my_ooo_ignore_danger)) & my_ooo_blocker_mask))) {
     Move m;
     m.flags = OOO;
     if (me == WHITE) {
@@ -408,36 +413,72 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   // Vertically pinned pawns cannot take, only push.
   // Vertically pinned pawns also cannot promote: either the king, or the piece pinning them,
   // will always block the promotion square.
-  b2 = b1 & orthogonal_pin;
-  b3 = b2 & (me == WHITE ? WHITE_DOUBLE_PUSH_RANK : BLACK_DOUBLE_PUSH_RANK);
-  while (b2) {
-    Square s = pop_lsb(&b2);
-    U64 move = (me == WHITE ? (SQUARE_TO_BITBOARD[s] << 8) : (SQUARE_TO_BITBOARD[s] >> 8)) & moveable;
-
-    // We don't need to include captures here; pawns capture diagonally
-    list = get_moves(s, move, list, QUIET);
-  }
-  while (b3) {
-    Square s = pop_lsb(&b3);
-    U64 move = (me == WHITE ? (SQUARE_TO_BITBOARD[s] << 8) : (SQUARE_TO_BITBOARD[s] >> 8)) & moveable;
-
-    // We don't need to include captures here; pawns capture diagonally
-    list = get_moves(s, move, list, QUIET);
-    move = (me == WHITE ? (SQUARE_TO_BITBOARD[s] << 16) : (SQUARE_TO_BITBOARD[s] >> 16)) & moveable;
-    list = get_moves(s, move, list, DOUBLE_PUSH);
-  }
-
-  // // All other pawns
-  // b2 = b1 & ~orthogonal_pin;
-  // b3 = b2 & (me == WHITE ? WHITE_DOUBLE_PUSH_RANK : BLACK_DOUBLE_PUSH_RANK);
   //
-  // while (b2) {
-  //   Square s = pop_lsb(&b2);
-  //   // All quiet moves, pushing one square forward
-  //   U64 move = me == WHITE ? (SQUARE_TO_BITBOARD[s] << 8) : (SQUARE_TO_BITBOARD[s] >> 8) & moveable;
-  //   list = get_moves(s, move, list, QUIET);
-  // }
-  
+  // https://lichess.org/editor/3r2k1/3P4/3K4/8/8/8/8/8_w_-_-_0_1?color=white
+  // https://lichess.org/editor/3K2k1/3P4/8/3r4/8/8/8/8_w_-_-_0_1?color=white
+
+  b2 = b1 & orthogonal_pin;
+  b3 = b2 & my_double_push_rank;
+  b2 ^= b3;
+  while (b2) {
+    Square from = pop_lsb(&b2);
+    Square to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable);
+
+    // We don't need to include captures here; pawns capture diagonally
+    Move move = {
+      .flags = QUIET,
+      .from = from,
+      .to = to
+    };
+    *list++ = move;
+  }
+
+  // Same as above but these pawns can also double push
+  while (b3) {
+    Square from = pop_lsb(&b3);
+    Square to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable);
+    Move move = {
+      .flags = QUIET,
+      .from = from,
+      .to = to
+    };
+    *list++ = move;
+    to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 16) : (SQUARE_TO_BITBOARD[from] >> 16)) & moveable);
+    move.to = to;
+    move.flags = DOUBLE_PUSH;
+    *list++ = move;
+  }
+
+  // All other pawns
+  b2 = b1 & ~orthogonal_pin;
+  b3 = b2 & my_double_push_rank;
+  b2 ^= b3;
+  while (b2) {
+    Square from = pop_lsb(&b2);
+    Square to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable);
+    Move move = {
+      .flags = QUIET,
+      .from = from,
+      .to = to
+    };
+    *list++ = move;
+  }
+
+  // Same as above but these pawns can also double push
+  while (b3) {
+    Square from = pop_lsb(&b3);
+    Square to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable);
+    Move move = {
+      .flags = QUIET,
+      .from = from,
+      .to = to
+    };
+    *list++ = move;
+    to = get_lsb_idx((me == WHITE ? (SQUARE_TO_BITBOARD[from] << 16) : (SQUARE_TO_BITBOARD[from] >> 16)) & moveable);
+    move.to = to;
+    move.flags = DOUBLE_PUSH;
+    *list++ = move;
+  }
 
   return list;
 }
