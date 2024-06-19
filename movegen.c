@@ -25,7 +25,7 @@ void play(Position *pos, Move *m){
       // Move without taking any pieces
       move_piece_quiet(pos, m->from, m->to);
       break;
-      
+
     case DOUBLE_PUSH:
       // Double pawn push
       move_piece_quiet(pos, m->from, m->to);
@@ -248,7 +248,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   U64 attacked = 0ULL; // Squares kin cannot move to
   U64 checkmask = 0ULL; // 1 for all pieces checking king, else all 1s;
 
-  U64 enpassant_target = SQUARE_TO_BITBOARD[pos->history[pos->ply].enpassant];
+  U64 enpassant_target = SQUARE_TO_BITBOARD[pos->history[pos->ply].enpassant] & my_enpassant_rank;
 
   // General purpose bitboards used for move generation
   U64 b1, b2, b3;
@@ -286,9 +286,10 @@ Move* generate_legal_moves(Position *pos, Move *list) {
 
   const U64 moveable = ~all_my_pieces & checkmask;
 
-  // Generate En Passant targets
+  // Generate En Passant targets if they exist
   if (enpassant_target) {
 
+    // If our king, at least one pawn and at least one of our opponent's orthogonal sliders are on EP rank:
     if ((my_enpassant_rank & my_king) && (my_enpassant_rank & your_orthogonal_sliders) && (my_enpassant_rank & my_pawns)) {
       const U64 enpassant_left = my_pawns & ((enpassant_target & NOT_H_FILE) >> 1);
       const U64 enpassant_right = my_pawns & ((enpassant_target & NOT_A_FILE) << 1);
@@ -404,7 +405,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   // Generate queen moves
   // Pinned queens have already been handled with the above lookups;
   // we only need to handle the non-pinned ones
-  b1 &= ~(orthogonal_pin | diagonal_pin); // b1 already contains queen moves: This is all non pinned queens
+  b1 = my_queens & ~(orthogonal_pin | diagonal_pin); // All non pinned queens
   while (b1) {
     Square s = pop_lsb(&b1);
     b2 = get_queen_attacks(s, all_pieces) & moveable;
@@ -424,15 +425,15 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   // https://lichess.org/editor/3r2k1/3P4/3K4/8/8/8/8/8_w_-_-_0_1?color=white
   // https://lichess.org/editor/3K2k1/3P4/8/3r4/8/8/8/8_w_-_-_0_1?color=white
 
-  b2 = b1 & orthogonal_pin;
+  b2 = b1 & orthogonal_pin & ~diagonal_pin;
   b3 = b2 & my_double_push_rank;
   b2 ^= b3; // Do not double count the pawns
 
-  // All other vertically pinned pawns
+  // All vertically pinned pawns that cannot double push
   while (b2) {
     Square from = pop_lsb(&b2);
     Move move = {.flags = QUIET, .from = from};
-    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable;
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable & ~all_your_pieces;
     if (target_bb) {
       move.to = get_lsb_idx(target_bb);
       *list++ = move;
@@ -444,21 +445,86 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     Square from = pop_lsb(&b3);
     Move move = {.flags = QUIET, .from = from};
     // Single push
-    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable;
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable & ~all_your_pieces;
     if (target_bb) {
       move.to = get_lsb_idx(target_bb);
       *list++ = move;
     }
 
-    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 16) : (SQUARE_TO_BITBOARD[from] >> 16)) & moveable;
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 16) : (SQUARE_TO_BITBOARD[from] >> 16)) & moveable & ~all_your_pieces;
     if (target_bb) {
       move.to = get_lsb_idx(target_bb);
       *list++ = move;
     }
   }
 
-  // All other pawns
-  b2 = b1 & ~orthogonal_pin;
+  // All diagonally pinned pawns
+  // Diagonally pinned pawns can take, but only in the direction of the pin.
+  // They can also promote, but only by capturing the piece that is pinning them.
+  b2 = b1 & ~orthogonal_pin & diagonal_pin;
+  b3 = b2 & my_promotion_rank;
+  // We do not need to check double push rank: diagonally pinned pawns cannot push.
+  // All diagonally pinned pawns that can promote
+  while (b3) {
+    Square from = pop_lsb(&b3);
+
+    Move move = {.from = from};
+
+    // Capture right
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 9) : (SQUARE_TO_BITBOARD[from] >> 7)) & moveable & all_your_pieces & diagonal_pin;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = PC_KNIGHT;
+      *list++ = move;
+      move.flags = PC_BISHOP;
+      *list++ = move;
+      move.flags = PC_ROOK;
+      *list++ = move;
+      move.flags = PC_QUEEN;
+      *list++ = move;
+    }
+
+    // Capture left
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 7) : (SQUARE_TO_BITBOARD[from] >> 9)) & moveable & all_your_pieces & diagonal_pin;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = PC_KNIGHT;
+      *list++ = move;
+      move.flags = PC_BISHOP;
+      *list++ = move;
+      move.flags = PC_ROOK;
+      *list++ = move;
+      move.flags = PC_QUEEN;
+      *list++ = move;
+    }
+  }
+
+  // All diagonally pinned pawns that cannot promote
+  while (b2) {
+    Square from = pop_lsb(&b2);
+
+    Move move = {.flags = QUIET, .from = from};
+
+    // Capture right
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 9) : (SQUARE_TO_BITBOARD[from] >> 7)) & moveable & all_your_pieces;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = CAPTURE;
+      *list++ = move;
+    }
+
+    // Capture left
+    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 7) : (SQUARE_TO_BITBOARD[from] >> 9)) & moveable & all_your_pieces;
+    if (target_bb) {
+      move.to = get_lsb_idx(target_bb);
+      move.flags = CAPTURE;
+      *list++ = move;
+    }
+  }
+
+  // All unpinned pawns
+  // These pawns can perform all pawn moves.
+  b2 = b1 & ~(orthogonal_pin | diagonal_pin);
   b3 = b2 & my_double_push_rank;
   b2 ^= b3; // Do not double count the pawns
 
@@ -469,18 +535,18 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     Move move = {.flags = QUIET, .from = from};
 
     // Single push
-    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable;
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable & ~all_your_pieces;
     if (target_bb) {
       move.to = get_lsb_idx(target_bb);
       *list++ = move;
-    }
 
-    // Double push
-    target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 16) : (SQUARE_TO_BITBOARD[from] >> 16)) & moveable;
-    if (target_bb) {
-      move.to = get_lsb_idx(target_bb);
-      move.flags = DOUBLE_PUSH;
-      *list++ = move;
+      // Double push
+      target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 16) : (SQUARE_TO_BITBOARD[from] >> 16)) & moveable & ~all_your_pieces;
+      if (target_bb) {
+        move.to = get_lsb_idx(target_bb);
+        move.flags = DOUBLE_PUSH;
+        *list++ = move;
+      }
     }
 
     // Capture right
@@ -557,7 +623,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
 
     Move move = {.flags = QUIET, .from = from};
 
-    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable;
+    U64 target_bb = (me == WHITE ? (SQUARE_TO_BITBOARD[from] << 8) : (SQUARE_TO_BITBOARD[from] >> 8)) & moveable & ~all_your_pieces;
     if (target_bb) {
       move.to = get_lsb_idx(target_bb);
       *list++ = move;

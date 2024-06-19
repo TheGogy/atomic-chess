@@ -46,7 +46,7 @@ extern const U64 NOT_H_FILE;
 extern const U64 NOT_GH_FILE;
 extern const U64 NOT_AB_FILE;
 
-extern U64 ZOBRIST_TABLE[6][64];
+extern U64 ZOBRIST_TABLE[13][64];
 
 void init_zobrist_table();
 

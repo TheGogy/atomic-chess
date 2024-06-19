@@ -19,7 +19,7 @@ const U64 NOT_H_FILE = 9187201950435737471ULL;
 const U64 NOT_GH_FILE = 4557430888798830399ULL;
 const U64 NOT_AB_FILE = 18229723555195321596ULL;
 
-U64 ZOBRIST_TABLE[6][64];
+U64 ZOBRIST_TABLE[13][64];
 
 // From stockfish
 U64 gen_rand(U64 *s) {
@@ -29,7 +29,7 @@ U64 gen_rand(U64 *s) {
 
 void init_zobrist_table() {
   U64 s = 70026072ULL;
-  for (int piece = 0; piece < 6; piece++) {
+  for (int piece = 0; piece < 13; piece++) {
     for (int square = 0; square < 64; square++) {
       ZOBRIST_TABLE[piece][square] = gen_rand(&s);
     }
@@ -50,8 +50,7 @@ inline void remove_piece(Position *pos, Square s){
   pos->board[s] = NO_PIECE;
 }
 
-// Moves whatever piece is on the "from" square to the "to" square
-// And vice versa. Used for moves that can be captures.
+// Moves whatever piece is on the "from" square to the "to" square, implementing captures.
 inline void move_piece(Position *pos, Square from, Square to) {
   pos->zobrist_hash ^= ZOBRIST_TABLE[pos->board[from]][from] ^
     ZOBRIST_TABLE[pos->board[from]][to] ^
@@ -83,10 +82,14 @@ void set_from_fen(Position *pos, const char *fen) {
   for (int i = 0; i < 64; i++) pos->board[i] = NO_PIECE;
 
   // Clear position data
+  Undoinfo empty_undoinfo = {
+    .entry = ALL_CASTLING_MASK,
+    .enpassant = NO_SQUARE,
+    .captured = NO_PIECE
+  };
+  for (int i = 0; i < 256; i++) pos->history[i] = empty_undoinfo;
+
   pos->ply = 0;
-  pos->history[0].entry = ALL_CASTLING_MASK;
-  pos->history[0].enpassant = NO_SQUARE;
-  pos->history[0].captured = NO_PIECE;
   pos->zobrist_hash = 0;
 
   // Pointer to the current character
@@ -207,6 +210,7 @@ void print_position(Position *pos) {
   }
   printf("\n    a b c d e f g h\n\n");
   printf("Side to move:       %s\n", pos->side_to_play ? "black" : "white");
+  printf("ply:                %d\n", pos->ply);
   printf("En passant square:  %s\n", SQUARE_TO_STRING[pos->history[pos->ply].enpassant]);
   printf("Castling rights:    %c%c%c%c\n",
          pos->history[pos->ply].entry & OO_MASK[WHITE]  ? '-' : 'K',
