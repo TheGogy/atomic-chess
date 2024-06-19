@@ -253,7 +253,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   // General purpose bitboards used for move generation
   U64 b1, b2, b3;
 
-  // Generate orthogonal pin masks
+  // Generate orthogonal pin masks + checkmasks
   if (PSEUDO_LEGAL_ATTACKS[ROOK][my_king_square] & your_orthogonal_sliders) {
     U64 attackHV = get_rook_attacks(my_king_square, all_pieces) & your_orthogonal_sliders;
     U64 pinsHV = get_xray_rook_lookups(my_king_square, all_pieces) & your_orthogonal_sliders;
@@ -265,7 +265,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     }
   }
 
-  // Generate diagonal pin masks
+  // Generate diagonal pin masks + checkmasks
   if (PSEUDO_LEGAL_ATTACKS[BISHOP][my_king_square] & your_diagonal_sliders) {
     U64 attackD12 = get_bishop_attacks(my_king_square, all_pieces) & your_diagonal_sliders;
     U64 pinsD12 = get_xray_bishop_lookups(my_king_square, all_pieces) & your_diagonal_sliders;
@@ -278,9 +278,12 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     }
   }
 
-  // Generate knight pin masks
+  // Generate knight pin masks + checkmasks
   // We can only ever be in check from a single knight at once: This can only have a single bit set
   checkmask |= PSEUDO_LEGAL_ATTACKS[KNIGHT][my_king_square] & your_knights;
+
+  // Generate pawn checkmasks
+  checkmask |= PAWN_ATTACKS[me][my_king_square] & your_pawns;
 
   if (!checkmask) checkmask = 0xFFFFFFFFFFFFFFFF;
 

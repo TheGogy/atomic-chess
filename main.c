@@ -56,25 +56,25 @@ int main(int argc, char *argv[]){
   init_zobrist_table();
 
   Position pos;
-  set_from_fen(&pos, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
-  // set_from_fen(&pos, "8/1q6/8/3pP3/8/5K2/8/8 w - d6 0 1");
+  // set_from_fen(&pos, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
+  set_from_fen(&pos, "8/4k3/8/8/3p4/4K3/7R/8 w - - 0 1");
   print_position(&pos);
 
   Move move_list[256];
   Move *last = generate_legal_moves(&pos, move_list);
   print_all_moves(&pos, move_list, last);
 
-  clock_t start, end;
-  double cpu_time_used;
-
-  start = clock();
-  U64 nodes = perft(&pos, 6);
-  end = clock();
-
-  cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-
-  printf("\n\nPERFT positions: %llu\n", nodes);
-  printf("Time: %f\n", cpu_time_used);
+  // clock_t start, end;
+  // double cpu_time_used;
+  //
+  // start = clock();
+  // U64 nodes = perft(&pos, 6);
+  // end = clock();
+  //
+  // cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+  //
+  // printf("\n\nPERFT positions: %llu\n", nodes);
+  // printf("Time: %f\n", cpu_time_used);
 
   return EXIT_SUCCESS;
 }
