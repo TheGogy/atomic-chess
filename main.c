@@ -32,18 +32,28 @@ U64 perft(Position *pos, unsigned int depth) {
   if (depth == 1) {
     return n_moves;
   }
-
-  print_position(pos);
+  
 
   for (int i = 0; i < n_moves; i++) {
-    printf("%s%s || Piece: %c || Flags: %s\n",
-           SQUARE_TO_STRING[move_list[i].from],
-           SQUARE_TO_STRING[move_list[i].to],
-           PIECE_TO_CHAR[pos->board[move_list[i].from]],
-           MOVETYPE_TO_STR[move_list[i].flags]
-    );
+    // getchar();
+    if (pos->board[move_list[i].from] == WHITE_KING) {
+      print_position(pos);
+      printf("PLAYING MOVE %s%s || Piece: %c || Flags: %s\n",
+             SQUARE_TO_STRING[move_list[i].from],
+             SQUARE_TO_STRING[move_list[i].to],
+             PIECE_TO_CHAR[pos->board[move_list[i].from]],
+             MOVETYPE_TO_STR[move_list[i].flags]
+             );
+      getchar();
+    };
     play(pos, &move_list[i]);
     nodes += perft(pos, depth - 1);
+    // printf("UNDOING MOVE %s%s || Piece: %c || Flags: %s\n",
+    //        SQUARE_TO_STRING[move_list[i].from],
+    //        SQUARE_TO_STRING[move_list[i].to],
+    //        PIECE_TO_CHAR[pos->board[move_list[i].from]],
+    //        MOVETYPE_TO_STR[move_list[i].flags]
+    // );
     undo(pos, &move_list[i]);
   }
   return nodes;
@@ -56,25 +66,26 @@ int main(int argc, char *argv[]){
   init_zobrist_table();
 
   Position pos;
-  // set_from_fen(&pos, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
-  set_from_fen(&pos, "8/4k3/8/8/3p4/4K3/7R/8 w - - 0 1");
+  set_from_fen(&pos, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
+  // set_from_fen(&pos, "4k3/8/8/1KPpP2q/8/8/8/8 w - d6 0 1");
   print_position(&pos);
 
-  Move move_list[256];
-  Move *last = generate_legal_moves(&pos, move_list);
-  print_all_moves(&pos, move_list, last);
+  // Move move_list[256];
+  // Move *last = generate_legal_moves(&pos, move_list);
+  // print_all_moves(&pos, move_list, last);
 
-  // clock_t start, end;
-  // double cpu_time_used;
-  //
-  // start = clock();
-  // U64 nodes = perft(&pos, 6);
-  // end = clock();
-  //
-  // cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-  //
-  // printf("\n\nPERFT positions: %llu\n", nodes);
-  // printf("Time: %f\n", cpu_time_used);
+  clock_t start, end;
+  double cpu_time_used;
+
+  start = clock();
+  U64 nodes = perft(&pos, 6);
+  end = clock();
+
+  cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+
+  printf("\n\nPERFT positions: %llu\n", nodes);
+  printf("Time: %f\n", cpu_time_used);
+  printf("NPS: %f\n", nodes / cpu_time_used);
 
   return EXIT_SUCCESS;
 }

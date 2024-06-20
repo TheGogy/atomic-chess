@@ -82,12 +82,9 @@ void set_from_fen(Position *pos, const char *fen) {
   for (int i = 0; i < 64; i++) pos->board[i] = NO_PIECE;
 
   // Clear position data
-  Undoinfo empty_undoinfo = {
-    .entry = ALL_CASTLING_MASK,
-    .enpassant = NO_SQUARE,
-    .captured = NO_PIECE
-  };
-  for (int i = 0; i < 256; i++) pos->history[i] = empty_undoinfo;
+  for (int i = 0; i < 256; i++) pos->history[i].entry = ALL_CASTLING_MASK;
+  for (int i = 0; i < 256; i++) pos->history[i].enpassant = NO_SQUARE;
+  for (int i = 0; i < 256; i++) pos->history[i].captured = NO_PIECE;
 
   pos->ply = 0;
   pos->zobrist_hash = 0;
