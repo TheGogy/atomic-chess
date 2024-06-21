@@ -32,30 +32,10 @@ U64 perft(Position *pos, unsigned int depth) {
   if (depth == 1) {
     return n_moves;
   }
-  
 
   for (int i = 0; i < n_moves; i++) {
-    // getchar();
-    // if (pos->board[move_list[i].from] == WHITE_KING) {
-      printf("-----------------------------------------------------\n");
-      print_position(pos);
-      printf("PLAYING MOVE %s%s || Piece: %c || Flags: %s\n",
-             SQUARE_TO_STRING[move_list[i].from],
-             SQUARE_TO_STRING[move_list[i].to],
-             PIECE_TO_CHAR[pos->board[move_list[i].from]],
-             MOVETYPE_TO_STR[move_list[i].flags]
-             );
-      printf("Depth: %d\n", depth);
-      // getchar();
-    // };
     play(pos, &move_list[i]);
     nodes += perft(pos, depth - 1);
-    printf("UNDOING MOVE %s%s || Piece: %c || Flags: %s\n",
-           SQUARE_TO_STRING[move_list[i].from],
-           SQUARE_TO_STRING[move_list[i].to],
-           PIECE_TO_CHAR[pos->board[move_list[i].from]],
-           MOVETYPE_TO_STR[move_list[i].flags]
-    );
     undo(pos, &move_list[i]);
   }
   return nodes;
@@ -69,36 +49,8 @@ int main(int argc, char *argv[]){
 
   Position pos;
   set_from_fen(&pos, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
-  // set_from_fen(&pos, "rnbqkbnr/p1pppppp/8/1P6/8/8/1PPPPPPP/RNBQKBNR w KQkq a6");
+  // set_from_fen(&pos, "rnbqkbnr/pppppp2/8/6Pp/8/8/PPPPP1PP/RNBQKBNR w KQkq h6");
   print_position(&pos);
-
-  // Move move_list[256];
-  // 
-  // U64 n_moves = generate_legal_moves(&pos, move_list) - move_list;
-  //
-  // for (int i = 0; i < n_moves; i++) {
-  //   // getchar();
-  //   // if (&pos->board[move_list[i].from] == WHITE_KING) {
-  //     printf("-----------------------------------------------------\n");
-  //     print_position(&pos);
-  //     printf("PLAYING MOVE %s%s || Piece: %c || Flags: %s\n",
-  //            SQUARE_TO_STRING[move_list[i].from],
-  //            SQUARE_TO_STRING[move_list[i].to],
-  //            PIECE_TO_CHAR[pos.board[move_list[i].from]],
-  //            MOVETYPE_TO_STR[move_list[i].flags]
-  //            );
-  //     getchar();
-  //   // };
-  //   play(&pos, &move_list[i]);
-  //   printf("UNDOING MOVE %s%s || Piece: %c || Flags: %s\n",
-  //          SQUARE_TO_STRING[move_list[i].from],
-  //          SQUARE_TO_STRING[move_list[i].to],
-  //          PIECE_TO_CHAR[pos.board[move_list[i].from]],
-  //          MOVETYPE_TO_STR[move_list[i].flags]
-  //   );
-  //   undo(&pos, &move_list[i]);
-  // }
-
 
   // Move *last = generate_legal_moves(&pos, move_list);
   // print_all_moves(&pos, move_list, last);

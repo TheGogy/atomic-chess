@@ -18,6 +18,8 @@ void play(Position *pos, Move *m){
 
   // Update move history
   pos->history[pos->ply].entry |= SQUARE_TO_BITBOARD[m->to] | SQUARE_TO_BITBOARD[m->from];
+  pos->history[pos->ply].captured = NO_PIECE;
+  pos->history[pos->ply].enpassant = NO_SQUARE;
 
   // Perform move based on move type
   switch (m->flags) {
@@ -58,7 +60,7 @@ void play(Position *pos, Move *m){
     case EN_PASSANT:
       // Taking en passant
       move_piece_quiet(pos, m->from, m->to);
-      remove_piece(pos, m->to + (c == WHITE ? - 8 : 8));
+      remove_piece(pos, m->to + (c == WHITE ? -8 : 8));
       break;
 
     case PR_KNIGHT:
