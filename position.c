@@ -52,9 +52,10 @@ inline void remove_piece(Position *pos, Square s){
 
 // Moves whatever piece is on the "from" square to the "to" square, implementing captures.
 inline void move_piece(Position *pos, Square from, Square to) {
+  printf("MOVED PIECE %s - %s\n", SQUARE_TO_STRING[from], SQUARE_TO_STRING[to]);
   pos->zobrist_hash ^= ZOBRIST_TABLE[pos->board[from]][from] ^
-    ZOBRIST_TABLE[pos->board[from]][to] ^
-    ZOBRIST_TABLE[pos->board[to]][to];
+                       ZOBRIST_TABLE[pos->board[from]][to] ^
+                       ZOBRIST_TABLE[pos->board[to]][to];
 
   U64 mask = SQUARE_TO_BITBOARD[from] | SQUARE_TO_BITBOARD[to];
   pos->pieces[PIECE_TO_COLOR[pos->board[from]]][PIECE_TO_TYPE[pos->board[from]]] ^= mask;
@@ -66,8 +67,9 @@ inline void move_piece(Position *pos, Square from, Square to) {
 // Moves the piece from the "from" square to the "to" square. Does not
 // implement captures.
 inline void move_piece_quiet(Position *pos, Square from, Square to) {
+  printf("MOVED PIECE QUIET %s - %s\n", SQUARE_TO_STRING[from], SQUARE_TO_STRING[to]);
   pos->zobrist_hash ^= ZOBRIST_TABLE[pos->board[from]][from] ^
-    ZOBRIST_TABLE[pos->board[from]][to];
+                       ZOBRIST_TABLE[pos->board[from]][to];
 
   pos->pieces[PIECE_TO_COLOR[pos->board[from]]][PIECE_TO_TYPE[pos->board[from]]] ^= (SQUARE_TO_BITBOARD[from] | SQUARE_TO_BITBOARD[to]);
   pos->board[to] = pos->board[from];

@@ -58,7 +58,7 @@ void play(Position *pos, Move *m){
     case EN_PASSANT:
       // Taking en passant
       move_piece_quiet(pos, m->from, m->to);
-      remove_piece(pos, (c == WHITE ? m->to - 8 : m->to + 8));
+      remove_piece(pos, m->to + (c == WHITE ? - 8 : 8));
       break;
 
     case PR_KNIGHT:
@@ -164,7 +164,7 @@ void undo(Position *pos, Move *m){
     case EN_PASSANT:
       // Capturing en passant
       move_piece_quiet(pos, m->to, m->from);
-      put_piece(pos, PAWN, c, (c == WHITE ? -8 : 8));
+      put_piece(pos, PAWN, c, m->to + (c == WHITE ? 8 : -8));
       break;
 
     // Promoting to the given piece
