@@ -129,6 +129,7 @@ void play(Position *pos, Move *m){
 
 // Undoes the given move in the given position
 void undo(Position *pos, Move *m){
+  pos->side_to_play ^= BLACK;
   Color c = pos->side_to_play;
   switch (m->flags) {
     case QUIET:
@@ -166,7 +167,7 @@ void undo(Position *pos, Move *m){
     case EN_PASSANT:
       // Capturing en passant
       move_piece_quiet(pos, m->to, m->from);
-      put_piece(pos, PAWN, c, m->to + (c == WHITE ? 8 : -8));
+      put_piece(pos, PAWN, c ^ BLACK, m->to + (c == WHITE ? 8 : -8));
       break;
 
     // Promoting to the given piece
@@ -198,7 +199,6 @@ void undo(Position *pos, Move *m){
       put_piece(pos, PIECE_TO_TYPE[captured], PIECE_TO_COLOR[captured], m->to);
       break;
   }
-  pos->side_to_play ^= BLACK;
   --pos->ply;
 }
 
@@ -247,7 +247,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     U64 attackHV = get_rook_attacks(my_king_square, all_pieces) & your_orthogonal_sliders;
     U64 pinsHV = get_xray_rook_lookups(my_king_square, all_pieces) & your_orthogonal_sliders;
     while (attackHV) {
-      checkmask |= CHECK_BETWEEN[my_king_square][pop_lsb(&attackHV)];
+      checkmask |= PIN_BETWEEN[my_king_square][pop_lsb(&attackHV)];
     }
     while (pinsHV) {
       orthogonal_pin |= PIN_BETWEEN[my_king_square][pop_lsb(&pinsHV)];
@@ -259,7 +259,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     U64 attackD12 = get_bishop_attacks(my_king_square, all_pieces) & your_diagonal_sliders;
     U64 pinsD12 = get_xray_bishop_lookups(my_king_square, all_pieces) & your_diagonal_sliders;
     while (attackD12) {
-      checkmask |= CHECK_BETWEEN[my_king_square][pop_lsb(&attackD12)];
+      checkmask |= PIN_BETWEEN[my_king_square][pop_lsb(&attackD12)];
     }
 
     while (pinsD12) {
@@ -283,9 +283,9 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   attacked |= get_all_knight_attacks(your_knights);
   attacked |= get_all_pawn_attacks(your_pawns, you);
   b1 = your_diagonal_sliders;
-  while (b1) attacked |= get_bishop_attacks(pop_lsb(&b1), all_pieces);
+  while (b1) attacked |= get_bishop_attacks(pop_lsb(&b1), all_pieces ^ my_king);
   b1 = your_orthogonal_sliders;
-  while (b1) attacked |= get_rook_attacks(pop_lsb(&b1), all_pieces);
+  while (b1) attacked |= get_rook_attacks(pop_lsb(&b1), all_pieces ^ my_king);
   attacked |= KING_ATTACKS[your_king_square];
 
   // King moves
@@ -345,11 +345,11 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   pawns_push_single &= (me == WHITE ? (checkmask >> 8) : (checkmask << 8));
 
   // Prune pin info
-  b1 = pawns_take_left & (me == WHITE ? ((diagonal_pin & NOT_A_FILE) >> 7) : ((diagonal_pin & NOT_A_FILE) << 9));
+  b1 = pawns_take_left & (me == WHITE ? ((diagonal_pin & NOT_H_FILE) >> 7) : ((diagonal_pin & NOT_H_FILE) << 9));
   b2 = pawns_take_left & ~diagonal_pin;
   pawns_take_left = (b1 | b2);
 
-  b1 = pawns_take_right & (me == WHITE ? ((diagonal_pin & NOT_H_FILE) >> 9) : ((diagonal_pin & NOT_H_FILE) << 7));
+  b1 = pawns_take_right & (me == WHITE ? ((diagonal_pin & NOT_A_FILE) >> 9) : ((diagonal_pin & NOT_A_FILE) << 7));
   b2 = pawns_take_right & ~diagonal_pin;
   pawns_take_right = (b1 | b2);
 
@@ -364,6 +364,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   // Get en passant targets
   const U64 enpassant_target = SQUARE_TO_BITBOARD[pos->history[pos->ply].enpassant];
 
+  // Add en passant moves if they exist
   if (enpassant_target) {
     // The pawn that jumped forward to allow en passant
     // Diagonally pinned pawns cannot be taken by en passant
@@ -408,7 +409,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   // Add all other pawn moves to move list
   Move move;
 
-  // All double pushing pawns. These cannot promote.
+  // Pawns pushing two squares forward
   while (pawns_push_double) {
     Square s = pop_lsb(&pawns_push_double);
     move.from = s;
@@ -417,6 +418,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     *list++ = move;
   }
 
+  // Pawns pushing one square forward
   b1 = pawns_push_single & DOUBLE_PUSH_RANK[you]; // These pawns can promote next move
   b2 = pawns_push_single & ~b1;                   // These pawns cannot promote next move
 
@@ -442,6 +444,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     *list++ = move;
   }
 
+  // Pawns that can take left
   b1 = pawns_take_left & DOUBLE_PUSH_RANK[you]; // These pawns can promote next move
   b2 = pawns_take_left & ~b1;                   // These pawns cannot promote next move
 
@@ -467,6 +470,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     *list++ = move;
   }
 
+  // Pawns that can take right
   b1 = pawns_take_right & DOUBLE_PUSH_RANK[you]; // These pawns can promote next move
   b2 = pawns_take_right & ~b1;                   // These pawns cannot promote next move
 

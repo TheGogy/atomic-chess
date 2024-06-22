@@ -179,19 +179,19 @@ void get_fen_from_pos(Position *pos, char *fen){
     if (rank > 0) index += sprintf(&fen[index], "/");
   }
 
-  // Side to play
-  index += sprintf(&fen[index], " %s", pos->side_to_play == WHITE ? "w " : "b ");
+  // // Side to play
+  // index += sprintf(&fen[index], " %s", pos->side_to_play == WHITE ? "w " : "b ");
 
-  // Castling rights
-  if (!(pos->history[pos->ply].entry & OO_MASK[WHITE]   )) index += sprintf(&fen[index], "K");
-  if (!(pos->history[pos->ply].entry & OOO_MASK[WHITE]  )) index += sprintf(&fen[index], "Q");
-  if (!(pos->history[pos->ply].entry & OO_MASK[BLACK]   )) index += sprintf(&fen[index], "k");
-  if (!(pos->history[pos->ply].entry & OOO_MASK[BLACK]  )) index += sprintf(&fen[index], "q");
-  if (  pos->history[pos->ply].entry & ALL_CASTLING_MASK ) index += sprintf(&fen[index], "- ");
-
-  // En passant square
-  Square enpassant_square = pos->history[pos->ply].enpassant;
-  sprintf(&fen[index], " %s", (enpassant_square == NO_SQUARE ? "-" : SQUARE_TO_STRING[enpassant_square]));
+  // // Castling rights
+  // if (!(pos->history[pos->ply].entry & OO_MASK[WHITE]   )) index += sprintf(&fen[index], "K");
+  // if (!(pos->history[pos->ply].entry & OOO_MASK[WHITE]  )) index += sprintf(&fen[index], "Q");
+  // if (!(pos->history[pos->ply].entry & OO_MASK[BLACK]   )) index += sprintf(&fen[index], "k");
+  // if (!(pos->history[pos->ply].entry & OOO_MASK[BLACK]  )) index += sprintf(&fen[index], "q");
+  // if (  pos->history[pos->ply].entry & ALL_CASTLING_MASK ) index += sprintf(&fen[index], "- ");
+  //
+  // // En passant square
+  // Square enpassant_square = pos->history[pos->ply].enpassant;
+  // sprintf(&fen[index], " %s", (enpassant_square == NO_SQUARE ? "-" : SQUARE_TO_STRING[enpassant_square]));
 }
 
 // Prints the position and some other useful info
