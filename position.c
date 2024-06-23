@@ -3,30 +3,45 @@
 #include <ctype.h>
 #include <stdio.h>
 
+// Castling masks
+// Masks for king and rook, to see if they have moved
 const U64 OO_MASK[2] = {0x90ULL, 0x9000000000000000ULL};
 const U64 OOO_MASK[2] = {0x11ULL, 0x1100000000000000ULL};
+
+// Masks for king + both rooks, for both sides
+const U64 ALL_CASTLING_MASK = 0x9100000000000091ULL;
+
+// Masks for the squares between the king and rook
+// trying to castle.
 const U64 OO_BLOCKERS_MASK[2] = {0x60ULL, 0x6000000000000000ULL};
 const U64 OOO_BLOCKERS_MASK[2] = {0xEULL, 0xE00000000000000ULL};
+
+// We can still castle queenside even if the A file is under attack
+// https://lichess.org/editor/r3k3/8/8/8/8/8/8/R3K3_w_Qq_-_0_1?color=white
 const U64 OOO_IGNORE_DANGER[2] = {0xFFFFFFFFFFFFFFFDULL, 0xFDFFFFFFFFFFFFFFULL};
 
+// Special rank masks
+// Double push rank also works as promotion rank:
+// any piece on the opponent's double push rank can promote next move.
 const U64 DOUBLE_PUSH_RANK[2] = {0xFF00ULL, 0xFF000000000000ULL};
 const U64 EP_RANK[2] = {0xFF00000000ULL, 0xFF000000ULL};
 
-const U64 ALL_CASTLING_MASK = 0x9100000000000091ULL;
-
-const U64 NOT_A_FILE = 18374403900871474942ULL;
-const U64 NOT_H_FILE = 9187201950435737471ULL;
-const U64 NOT_GH_FILE = 4557430888798830399ULL;
-const U64 NOT_AB_FILE = 18229723555195321596ULL;
+// 0 for all squares in that file; 1 otherwise.
+const U64 NOT_A_FILE  = 0xFEFEFEFEFEFEFEFEULL;
+const U64 NOT_H_FILE  = 0x7F7F7F7F7F7F7F7FULL;
+const U64 NOT_GH_FILE = 0x3F3F3F3F3F3F3F3FULL;
+const U64 NOT_AB_FILE = 0xFCFCFCFCFCFCFCFCULL;
 
 U64 ZOBRIST_TABLE[13][64];
 
-// From stockfish
+// From Stockfish
 U64 gen_rand(U64 *s) {
   *s ^= *s >> 12, *s ^= *s >> 25, *s ^= *s >> 27;
   return (U64)*s * 2685821657736338717ULL;
 }
 
+// Creates the Zobrist table
+// https://www.chessprogramming.org/Zobrist_Hashing
 void init_zobrist_table() {
   U64 s = 70026072ULL;
   for (int piece = 0; piece < 13; piece++) {
@@ -36,14 +51,14 @@ void init_zobrist_table() {
   }
 }
 
-// Adds the specifiec piece to the specified square
+// Adds the piece to the specified square
 inline void put_piece(Position *pos, Piecetype pt, Color col, Square s) {
   pos->board[s] = TYPE_TO_PIECE[col][pt];
   pos->pieces[col][pt] |= SQUARE_TO_BITBOARD[s];
   pos->zobrist_hash ^= ZOBRIST_TABLE[pt][s];
 }
 
-// Removes the given piece from the specified Square
+// Removes the piece from the specified Square
 inline void remove_piece(Position *pos, Square s){
   pos->zobrist_hash ^= ZOBRIST_TABLE[pos->board[s]][s];
   pos->pieces[PIECE_TO_COLOR[pos->board[s]]][PIECE_TO_TYPE[pos->board[s]]] &= ~SQUARE_TO_BITBOARD[s];
@@ -179,19 +194,19 @@ void get_fen_from_pos(Position *pos, char *fen){
     if (rank > 0) index += sprintf(&fen[index], "/");
   }
 
-  // // Side to play
-  // index += sprintf(&fen[index], " %s", pos->side_to_play == WHITE ? "w " : "b ");
+  // Side to play
+  index += sprintf(&fen[index], " %s", pos->side_to_play == WHITE ? "w " : "b ");
 
-  // // Castling rights
-  // if (!(pos->history[pos->ply].entry & OO_MASK[WHITE]   )) index += sprintf(&fen[index], "K");
-  // if (!(pos->history[pos->ply].entry & OOO_MASK[WHITE]  )) index += sprintf(&fen[index], "Q");
-  // if (!(pos->history[pos->ply].entry & OO_MASK[BLACK]   )) index += sprintf(&fen[index], "k");
-  // if (!(pos->history[pos->ply].entry & OOO_MASK[BLACK]  )) index += sprintf(&fen[index], "q");
-  // if (  pos->history[pos->ply].entry & ALL_CASTLING_MASK ) index += sprintf(&fen[index], "- ");
-  //
-  // // En passant square
-  // Square enpassant_square = pos->history[pos->ply].enpassant;
-  // sprintf(&fen[index], " %s", (enpassant_square == NO_SQUARE ? "-" : SQUARE_TO_STRING[enpassant_square]));
+  // Castling rights
+  if (!(pos->history[pos->ply].entry & OO_MASK[WHITE]   )) index += sprintf(&fen[index], "K");
+  if (!(pos->history[pos->ply].entry & OOO_MASK[WHITE]  )) index += sprintf(&fen[index], "Q");
+  if (!(pos->history[pos->ply].entry & OO_MASK[BLACK]   )) index += sprintf(&fen[index], "k");
+  if (!(pos->history[pos->ply].entry & OOO_MASK[BLACK]  )) index += sprintf(&fen[index], "q");
+  if (  pos->history[pos->ply].entry & ALL_CASTLING_MASK ) index += sprintf(&fen[index], "- ");
+
+  // En passant square
+  Square enpassant_square = pos->history[pos->ply].enpassant;
+  sprintf(&fen[index], " %s", (enpassant_square == NO_SQUARE ? "-" : SQUARE_TO_STRING[enpassant_square]));
 }
 
 // Prints the position and some other useful info

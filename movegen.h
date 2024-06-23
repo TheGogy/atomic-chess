@@ -27,15 +27,19 @@ typedef enum moveflag {
 } MoveFlag;
 
 typedef struct move {
-  MoveFlag flags;
+  MoveFlag flag;
   Square from;
   Square to;
 } Move;
 
-inline Move* get_moves(Square from, U64 to, Move *list, MoveFlag flags) {
+// Gets all the moves for the piece on the specified square, adds them to the move list
+// and increments the move pointer.
+// from: The square the piece is on
+// to:   The bitboard with bits set on all the legal moves that piece can make
+inline Move* get_moves(Square from, U64 to, Move *list, MoveFlag flag) {
   while (to) {
     Move move = {
-      .flags = flags,
+      .flag = flag,
       .from = from,
       .to = (Square)pop_lsb(&to)
     };

@@ -14,31 +14,25 @@ typedef struct undoinfo {
 } Undoinfo;
 
 typedef struct position {
-  U64 pieces[2][6];         // Occupancy boards for all pieces
-  Piece board[64];        // Overall board state
+  U64 pieces[2][6];       // Occupancy boards for all pieces
+  Piece board[64];        // Overall board state, contains Pieces
   Color side_to_play;     // Marker for which side moves next
   int ply;                // Number of moves played
   U64 zobrist_hash;       // Current Zobrist hash
-  U64 checkers;           // Pieces checking king
-  U64 pinned;             // Pinned pieces board
-
   Undoinfo history[256];  // Game history
-
 } Position;
 
 // Castling masks
+// See position.c for more info
 extern const U64 OO_MASK[2];
 extern const U64 OOO_MASK[2];
 extern const U64 OO_BLOCKERS_MASK[2];
 extern const U64 OOO_BLOCKERS_MASK[2];
 extern const U64 OOO_IGNORE_DANGER[2];
-
 extern const U64 ALL_CASTLING_MASK;
 
 // En passant ranks
 extern const U64 EP_RANK[2];
-
-// Rank of first pawn (so that the pawns can be double pushed)
 extern const U64 DOUBLE_PUSH_RANK[2];
 
 extern const U64 NOT_A_FILE;

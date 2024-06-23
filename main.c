@@ -15,12 +15,14 @@ void print_all_moves(Position *pos, Move *move_list, Move *last) {
            SQUARE_TO_STRING[current->from],
            SQUARE_TO_STRING[current->to],
            PIECE_TO_CHAR[pos->board[current->from]],
-           MOVETYPE_TO_STR[current->flags]
+           MOVETYPE_TO_STR[current->flag]
     );
     current++;
   }
 }
 
+// Perft function, used to measure the speed of the move generator.
+// https://www.chessprogramming.org/Perft
 U64 perft(Position *pos, unsigned int depth) {
   Move move_list[256];
   U64 n_moves;
@@ -66,13 +68,13 @@ void run_perft_tests() {
 }
 
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
   // initialize all lookups (must be called at the start)
   initialize_all_lookups();
   init_zobrist_table();
 
-  // run_perft_tests();
+//   run_perft_tests();
 
   char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ";
   int depth = 6;

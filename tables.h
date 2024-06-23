@@ -5,47 +5,35 @@
 #include "position.h"
 #include "bitboards.h"
 
-// For these pieces, it is faster to just use a lookup table.
+// Piece attack lookups. Assumes empty board.
 // Ensure that the initialization functions are called before
 // using these.
 extern const U64 KING_ATTACKS[64];
 extern const U64 KNIGHT_ATTACKS[64];
-extern U64 PAWN_ATTACKS[2][64];
+extern const U64 PAWN_ATTACKS[2][64];
+extern const U64 BISHOP_ATTACKS[64];
+extern const U64 ROOK_ATTACKS[64];
 
-// Bitboard of all squares between two pieces (not including squares themselves)
-extern U64 SQUARES_BETWEEN[64][64];
-
-// Bitboard of all squares along the line between two pieces.
-extern U64 LINE_BETWEEN[64][64];
-
-// Path from enemy to king including square behind king (excluding enemy)
-// [king_square][enemy_square]
-extern U64 CHECK_BETWEEN[64][64];
-
-// Path between king and enemy. Zero if not slider
+// Pin between king and enemy. Zero if no straight path.
 // [king_square][enemy_square]
 extern U64 PIN_BETWEEN[64][64];
 
-// Pseudo legal attacks for all pieces (assuming no blockers)
-extern U64 PSEUDO_LEGAL_ATTACKS[6][64];
-
-// Initialization functions to populate all lookup tables
-void initialize_rook_attacks();
-void initialize_bishop_attacks();
+// Initialization functions to populate all lookup tables.
 void initialize_all_lookups();
-
-U64 mask_bishop_attacks_otf(Square s, U64 occupancies);
 
 // Get attacks for given piece.
 U64 get_rook_attacks(Square square, U64 occupancies);
-U64 get_xray_rook_lookups(Square square, U64 occupancies);
-
 U64 get_bishop_attacks(Square square, U64 occupancies);
-U64 get_xray_bishop_lookups(Square square, U64 occupancies);
-
 U64 get_queen_attacks(Square square, U64 occupancies);
 
-// Get all pawn attacks at once for given color.
+// Get xray attacks for given piece.
+// These will get attacks up to the first blockers, remove the first blockers,
+// and return the attacks after that.
+U64 get_xray_rook_lookups(Square square, U64 occupancies);
+U64 get_xray_bishop_lookups(Square square, U64 occupancies);
+
+
+// Get all the squares attacked by the pawns of the given color.
 static inline U64 get_all_pawn_attacks(U64 pawn_bb, Color c) {
   return c == WHITE ?
     (pawn_bb & NOT_H_FILE) << 9 |
@@ -53,17 +41,6 @@ static inline U64 get_all_pawn_attacks(U64 pawn_bb, Color c) {
   :
     (pawn_bb & NOT_H_FILE) >> 7 |
     (pawn_bb & NOT_A_FILE) >> 9;
-}
-
-// Get all knight attacks at once
-static inline U64 get_all_knight_attacks(U64 knight_bb) {
-  U64 l1 = (knight_bb >> 1) & NOT_H_FILE;
-  U64 l2 = (knight_bb >> 2) & NOT_GH_FILE;
-  U64 r1 = (knight_bb << 1) & NOT_A_FILE;
-  U64 r2 = (knight_bb << 2) & NOT_AB_FILE;
-  U64 h1 = l1 | r1;
-  U64 h2 = l2 | r2;
-  return (h1<<16) | (h1>>16) | (h2<<8) | (h2>>8);
 }
 
 #endif // !TABLES_H

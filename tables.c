@@ -2,6 +2,8 @@
 #include "bitboards.h"
 #include <string.h>
 
+// Attack bitboard for a king on a given square.
+// Assumes no other pieces on board.
 const U64 KING_ATTACKS[64] = {
   0x302ULL, 0x705ULL, 0xe0aULL, 0x1c14ULL,
   0x3828ULL, 0x7050ULL, 0xe0a0ULL, 0xc040ULL,
@@ -21,6 +23,8 @@ const U64 KING_ATTACKS[64] = {
   0x2838000000000000ULL, 0x5070000000000000ULL, 0xa0e0000000000000ULL, 0x40c0000000000000ULL,
 };
 
+// Attack bitboard for a knight on a given square.
+// Assumes no other pieces on board.
 const U64 KNIGHT_ATTACKS[64] = {
   0x20400ULL, 0x50800ULL, 0xa1100ULL, 0x142200ULL,
   0x284400ULL, 0x508800ULL, 0xa01000ULL, 0x402000ULL,
@@ -40,45 +44,92 @@ const U64 KNIGHT_ATTACKS[64] = {
   0x44280000000000ULL, 0x0088500000000000ULL, 0x0010a00000000000ULL, 0x20400000000000ULL
 };
 
-const U64 WHITE_PAWN_ATTACKS[64] = {
-  0x200ULL, 0x500ULL, 0xa00ULL, 0x1400ULL,
-  0x2800ULL, 0x5000ULL, 0xa000ULL, 0x4000ULL,
-  0x20000ULL, 0x50000ULL, 0xa0000ULL, 0x140000ULL,
-  0x280000ULL, 0x500000ULL, 0xa00000ULL, 0x400000ULL,
-  0x2000000ULL, 0x5000000ULL, 0xa000000ULL, 0x14000000ULL,
-  0x28000000ULL, 0x50000000ULL, 0xa0000000ULL, 0x40000000ULL,
-  0x200000000ULL, 0x500000000ULL, 0xa00000000ULL, 0x1400000000ULL,
-  0x2800000000ULL, 0x5000000000ULL, 0xa000000000ULL, 0x4000000000ULL,
-  0x20000000000ULL, 0x50000000000ULL, 0xa0000000000ULL, 0x140000000000ULL,
-  0x280000000000ULL, 0x500000000000ULL, 0xa00000000000ULL, 0x400000000000ULL,
-  0x2000000000000ULL, 0x5000000000000ULL, 0xa000000000000ULL, 0x14000000000000ULL,
-  0x28000000000000ULL, 0x50000000000000ULL, 0xa0000000000000ULL, 0x40000000000000ULL,
-  0x200000000000000ULL, 0x500000000000000ULL, 0xa00000000000000ULL, 0x1400000000000000ULL,
-  0x2800000000000000ULL, 0x5000000000000000ULL, 0xa000000000000000ULL, 0x4000000000000000ULL,
-  0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL,
-  0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL,
+// Attack bitboard for a pawn on a given square.
+// Assumes no other pieces on board.
+// [color][square]
+const U64 PAWN_ATTACKS[2][64] = {
+  { // White pawn attacks
+    0x200ULL, 0x500ULL, 0xa00ULL, 0x1400ULL,
+    0x2800ULL, 0x5000ULL, 0xa000ULL, 0x4000ULL,
+    0x20000ULL, 0x50000ULL, 0xa0000ULL, 0x140000ULL,
+    0x280000ULL, 0x500000ULL, 0xa00000ULL, 0x400000ULL,
+    0x2000000ULL, 0x5000000ULL, 0xa000000ULL, 0x14000000ULL,
+    0x28000000ULL, 0x50000000ULL, 0xa0000000ULL, 0x40000000ULL,
+    0x200000000ULL, 0x500000000ULL, 0xa00000000ULL, 0x1400000000ULL,
+    0x2800000000ULL, 0x5000000000ULL, 0xa000000000ULL, 0x4000000000ULL,
+    0x20000000000ULL, 0x50000000000ULL, 0xa0000000000ULL, 0x140000000000ULL,
+    0x280000000000ULL, 0x500000000000ULL, 0xa00000000000ULL, 0x400000000000ULL,
+    0x2000000000000ULL, 0x5000000000000ULL, 0xa000000000000ULL, 0x14000000000000ULL,
+    0x28000000000000ULL, 0x50000000000000ULL, 0xa0000000000000ULL, 0x40000000000000ULL,
+    0x200000000000000ULL, 0x500000000000000ULL, 0xa00000000000000ULL, 0x1400000000000000ULL,
+    0x2800000000000000ULL, 0x5000000000000000ULL, 0xa000000000000000ULL, 0x4000000000000000ULL,
+    0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL,
+    0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL,
+  },
+  { // Black pawn attacks
+    0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL,
+    0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL,
+    0x2ULL, 0x5ULL, 0xaULL, 0x14ULL,
+    0x28ULL, 0x50ULL, 0xa0ULL, 0x40ULL,
+    0x200ULL, 0x500ULL, 0xa00ULL, 0x1400ULL,
+    0x2800ULL, 0x5000ULL, 0xa000ULL, 0x4000ULL,
+    0x20000ULL, 0x50000ULL, 0xa0000ULL, 0x140000ULL,
+    0x280000ULL, 0x500000ULL, 0xa00000ULL, 0x400000ULL,
+    0x2000000ULL, 0x5000000ULL, 0xa000000ULL, 0x14000000ULL,
+    0x28000000ULL, 0x50000000ULL, 0xa0000000ULL, 0x40000000ULL,
+    0x200000000ULL, 0x500000000ULL, 0xa00000000ULL, 0x1400000000ULL,
+    0x2800000000ULL, 0x5000000000ULL, 0xa000000000ULL, 0x4000000000ULL,
+    0x20000000000ULL, 0x50000000000ULL, 0xa0000000000ULL, 0x140000000000ULL,
+    0x280000000000ULL, 0x500000000000ULL, 0xa00000000000ULL, 0x400000000000ULL,
+    0x2000000000000ULL, 0x5000000000000ULL, 0xa000000000000ULL, 0x14000000000000ULL,
+    0x28000000000000ULL, 0x50000000000000ULL, 0xa0000000000000ULL, 0x40000000000000ULL,
+  }
 };
 
-const U64 BLACK_PAWN_ATTACKS[64] = {
-  0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL,
-  0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL,
-  0x2ULL, 0x5ULL, 0xaULL, 0x14ULL,
-  0x28ULL, 0x50ULL, 0xa0ULL, 0x40ULL,
-  0x200ULL, 0x500ULL, 0xa00ULL, 0x1400ULL,
-  0x2800ULL, 0x5000ULL, 0xa000ULL, 0x4000ULL,
-  0x20000ULL, 0x50000ULL, 0xa0000ULL, 0x140000ULL,
-  0x280000ULL, 0x500000ULL, 0xa00000ULL, 0x400000ULL,
-  0x2000000ULL, 0x5000000ULL, 0xa000000ULL, 0x14000000ULL,
-  0x28000000ULL, 0x50000000ULL, 0xa0000000ULL, 0x40000000ULL,
-  0x200000000ULL, 0x500000000ULL, 0xa00000000ULL, 0x1400000000ULL,
-  0x2800000000ULL, 0x5000000000ULL, 0xa000000000ULL, 0x4000000000ULL,
-  0x20000000000ULL, 0x50000000000ULL, 0xa0000000000ULL, 0x140000000000ULL,
-  0x280000000000ULL, 0x500000000000ULL, 0xa00000000000ULL, 0x400000000000ULL,
-  0x2000000000000ULL, 0x5000000000000ULL, 0xa000000000000ULL, 0x14000000000000ULL,
-  0x28000000000000ULL, 0x50000000000000ULL, 0xa0000000000000ULL, 0x40000000000000ULL,
-
+// Attack bitboard for a rook on a given square.
+// Assumes no other pieces on board.
+const U64 ROOK_ATTACKS[64] = {
+  0x01010101010101feULL, 0x02020202020202fdULL, 0x04040404040404fbULL, 0x08080808080808f7ULL,
+  0x10101010101010efULL, 0x20202020202020dfULL, 0x40404040404040bfULL, 0x808080808080807fULL,
+  0x010101010101fe01ULL, 0x020202020202fd02ULL, 0x040404040404fb04ULL, 0x080808080808f708ULL,
+  0x101010101010ef10ULL, 0x202020202020df20ULL, 0x404040404040bf40ULL, 0x8080808080807f80ULL,
+  0x0101010101fe0101ULL, 0x0202020202fd0202ULL, 0x0404040404fb0404ULL, 0x0808080808f70808ULL,
+  0x1010101010ef1010ULL, 0x2020202020df2020ULL, 0x4040404040bf4040ULL, 0x80808080807f8080ULL,
+  0x01010101fe010101ULL, 0x02020202fd020202ULL, 0x04040404fb040404ULL, 0x08080808f7080808ULL,
+  0x10101010ef101010ULL, 0x20202020df202020ULL, 0x40404040bf404040ULL, 0x808080807f808080ULL,
+  0x010101fe01010101ULL, 0x020202fd02020202ULL, 0x040404fb04040404ULL, 0x080808f708080808ULL,
+  0x101010ef10101010ULL, 0x202020df20202020ULL, 0x404040bf40404040ULL, 0x8080807f80808080ULL,
+  0x0101fe0101010101ULL, 0x0202fd0202020202ULL, 0x0404fb0404040404ULL, 0x0808f70808080808ULL,
+  0x1010ef1010101010ULL, 0x2020df2020202020ULL, 0x4040bf4040404040ULL, 0x80807f8080808080ULL,
+  0x01fe010101010101ULL, 0x02fd020202020202ULL, 0x04fb040404040404ULL, 0x08f7080808080808ULL,
+  0x10ef101010101010ULL, 0x20df202020202020ULL, 0x40bf404040404040ULL, 0x807f808080808080ULL,
+  0xfe01010101010101ULL, 0xfd02020202020202ULL, 0xfb04040404040404ULL, 0xf708080808080808ULL,
+  0xef10101010101010ULL, 0xdf20202020202020ULL, 0xbf40404040404040ULL, 0x7f80808080808080ULL,
 };
 
+// Attack bitboard for a bishop on a given square.
+// Assumes no other pieces on board.
+const U64 BISHOP_ATTACKS[64] = {
+  0x8040201008040200ULL, 0x0080402010080500ULL, 0x0000804020110a00ULL, 0x0000008041221400ULL,
+  0x0000000182442800ULL, 0x0000010204885000ULL, 0x000102040810a000ULL, 0x0102040810204000ULL,
+  0x4020100804020002ULL, 0x8040201008050005ULL, 0x00804020110a000aULL, 0x0000804122140014ULL,
+  0x0000018244280028ULL, 0x0001020488500050ULL, 0x0102040810a000a0ULL, 0x0204081020400040ULL,
+  0x2010080402000204ULL, 0x4020100805000508ULL, 0x804020110a000a11ULL, 0x0080412214001422ULL,
+  0x0001824428002844ULL, 0x0102048850005088ULL, 0x02040810a000a010ULL, 0x0408102040004020ULL,
+  0x1008040200020408ULL, 0x2010080500050810ULL, 0x4020110a000a1120ULL, 0x8041221400142241ULL,
+  0x0182442800284482ULL, 0x0204885000508804ULL, 0x040810a000a01008ULL, 0x0810204000402010ULL,
+  0x0804020002040810ULL, 0x1008050005081020ULL, 0x20110a000a112040ULL, 0x4122140014224180ULL,
+  0x8244280028448201ULL, 0x0488500050880402ULL, 0x0810a000a0100804ULL, 0x1020400040201008ULL,
+  0x0402000204081020ULL, 0x0805000508102040ULL, 0x110a000a11204080ULL, 0x2214001422418000ULL,
+  0x4428002844820100ULL, 0x8850005088040201ULL, 0x10a000a010080402ULL, 0x2040004020100804ULL,
+  0x0200020408102040ULL, 0x0500050810204080ULL, 0x0a000a1120408000ULL, 0x1400142241800000ULL,
+  0x2800284482010000ULL, 0x5000508804020100ULL, 0xa000a01008040201ULL, 0x4000402010080402ULL,
+  0x0002040810204080ULL, 0x0005081020408000ULL, 0x000a112040800000ULL, 0x0014224180000000ULL,
+  0x0028448201000000ULL, 0x0050880402010000ULL, 0x00a0100804020100ULL, 0x0040201008040201ULL,
+};
+
+// Rook "magic numbers". Used to calculate rook attacks for a given square
+// Given some occupancy.
 const U64 ROOK_MAGICS[64] = {
   0x0080001020400080ULL, 0x0040001000200040ULL, 0x0080081000200080ULL, 0x0080040800100080ULL,
   0x0080020400080080ULL, 0x0080010200040080ULL, 0x0080008001000200ULL, 0x0080002040800100ULL,
@@ -98,6 +149,8 @@ const U64 ROOK_MAGICS[64] = {
   0x0001000204080011ULL, 0x0001000204000801ULL, 0x0001000082000401ULL, 0x0001FFFAABFAD1A2ULL
 };
 
+// Rook relevant bits. These are the number of bits that need to be looked
+// up to determine the rook attacks for a given square.
 const int ROOK_RELEVANT_BITS[64] = {
   52, 53, 53, 53, 53, 53, 53, 52, 53, 54, 54, 54, 54, 54, 54, 53,
   53, 54, 54, 54, 54, 54, 54, 53, 53, 54, 54, 54, 54, 54, 54, 53,
@@ -105,6 +158,8 @@ const int ROOK_RELEVANT_BITS[64] = {
   53, 54, 54, 54, 54, 54, 54, 53, 52, 53, 53, 53, 53, 53, 53, 52,
 };
 
+// Bishop "magic numbers". Used to calculate bishop attacks for a given square
+// Given some occupancy.
 const U64 BISHOP_MAGICS[64] = {
   0x0002020202020200ULL, 0x0002020202020000ULL, 0x0004010202000000ULL, 0x0004040080000000ULL,
   0x0001104000000000ULL, 0x0000821040000000ULL, 0x0000410410400000ULL, 0x0000104104104000ULL,
@@ -124,6 +179,8 @@ const U64 BISHOP_MAGICS[64] = {
   0x0000000010020200ULL, 0x0000000404080200ULL, 0x0000040404040400ULL, 0x0002020202020200ULL
 };
 
+// Bishop relevant bits. These are the number of bits that need to be looked
+// up to determine the bishop attacks for a given square.
 const int BISHOP_RELEVANT_BITS[64] = {
   58, 59, 59, 59, 59, 59, 59, 58, 59, 59, 59, 59, 59, 59, 59, 59,
   59, 59, 57, 57, 57, 57, 59, 59, 59, 59, 57, 55, 55, 57, 59, 59,
@@ -132,8 +189,10 @@ const int BISHOP_RELEVANT_BITS[64] = {
 };
 
 U64 ROOK_MASKS[64];
-U64 ROOK_ATTACKS[64][4096];
+U64 ROOK_MOVES[64][4096];
 
+// Calculate the rook mask for the given square.
+// This is all the squares the rook can attack, except edges.
 U64 mask_rook_attacks(Square square) {
   U64 attacks_bitboard = 0ULL; // Attacks bitboard
 
@@ -153,6 +212,7 @@ U64 mask_rook_attacks(Square square) {
   return attacks_bitboard;
 }
 
+// Slow rook attack function, used to initialize the ROOK_MOVES table.
 U64 mask_rook_attacks_otf(Square square, U64 block) {
   U64 attacks_bitboard = 0ULL; // Attacks bitboard
 
@@ -185,8 +245,10 @@ U64 mask_rook_attacks_otf(Square square, U64 block) {
 }
 
 U64 BISHOP_MASKS[64];
-U64 BISHOP_ATTACKS[64][4096];
+U64 BISHOP_MOVES[64][4096];
 
+// Calculate the bishop mask for the given square.
+// This is all the squares the bishop can attack, except edges.
 U64 mask_bishop_attacks(Square square) {
   U64 attacks = 0ULL;
 
@@ -206,6 +268,7 @@ U64 mask_bishop_attacks(Square square) {
   return attacks;
 }
 
+// Slow bishop attack function, used to initialize the ROOK_MOVES table.
 U64 mask_bishop_attacks_otf(Square square, U64 block) {
   U64 attacks_bitboard = 0ULL; // Attacks bitboard
 
@@ -236,6 +299,7 @@ U64 mask_bishop_attacks_otf(Square square, U64 block) {
   return attacks_bitboard;
 }
 
+// Set all the bits in the attack mask up to the index
 U64 set_occupancies(int index, int bits_in_mask, U64 attack_mask) {
   U64 occupancies = 0ULL;
   for (int count = 0; count < bits_in_mask; count++) {
@@ -250,6 +314,7 @@ U64 set_occupancies(int index, int bits_in_mask, U64 attack_mask) {
   return occupancies;
 }
 
+// Generate the ROOK_MOVES attack table
 void init_rook_attacks() {
   for (Square square = 0; square < 64; square++) {
     ROOK_MASKS[square] = mask_rook_attacks(square);
@@ -258,16 +323,14 @@ void init_rook_attacks() {
     int occupancies_indices = (1 << relevant_bits_count);
 
     for (int index = 0; index < occupancies_indices; index++) {
-      U64 occupancies =
-          set_occupancies(index, relevant_bits_count, attack_mask);
-      int magic_index =
-          (occupancies * ROOK_MAGICS[square]) >> ROOK_RELEVANT_BITS[square];
-      ROOK_ATTACKS[square][magic_index] =
-          mask_rook_attacks_otf(square, occupancies);
+      U64 occupancies = set_occupancies(index, relevant_bits_count, attack_mask);
+      int magic_index = (occupancies * ROOK_MAGICS[square]) >> ROOK_RELEVANT_BITS[square];
+      ROOK_MOVES[square][magic_index] = mask_rook_attacks_otf(square, occupancies);
     }
   }
 }
 
+// Generate the BISHOP_MOVES attack table
 void init_bishop_attacks() {
   for (Square square = 0; square < 64; square++) {
     BISHOP_MASKS[square] = mask_bishop_attacks(square);
@@ -276,21 +339,19 @@ void init_bishop_attacks() {
     int occupancies_indices = (1 << relevant_bits_count);
 
     for (int index = 0; index < occupancies_indices; index++) {
-      U64 occupancies =
-          set_occupancies(index, relevant_bits_count, attack_mask);
-      int magic_index =
-          (occupancies * BISHOP_MAGICS[square]) >> BISHOP_RELEVANT_BITS[square];
-      BISHOP_ATTACKS[square][magic_index] =
-          mask_bishop_attacks_otf(square, occupancies);
+      U64 occupancies = set_occupancies(index, relevant_bits_count, attack_mask);
+      int magic_index = (occupancies * BISHOP_MAGICS[square]) >> BISHOP_RELEVANT_BITS[square];
+      BISHOP_MOVES[square][magic_index] = mask_bishop_attacks_otf(square, occupancies);
     }
   }
 }
 
+// Gets the rook attacks for a given square and occupancy using magic bit shifts.
 inline U64 get_rook_attacks(Square square, U64 occupancies) {
   U64 magic_lookup = occupancies & ROOK_MASKS[square];
   magic_lookup *= ROOK_MAGICS[square];
   magic_lookup >>= ROOK_RELEVANT_BITS[square];
-  return ROOK_ATTACKS[square][magic_lookup];
+  return ROOK_MOVES[square][magic_lookup];
 }
 
 inline U64 get_xray_rook_lookups(Square square, U64 occupancies) {
@@ -298,11 +359,12 @@ inline U64 get_xray_rook_lookups(Square square, U64 occupancies) {
   return attacks ^ get_rook_attacks(square, occupancies ^ (attacks & occupancies));
 }
 
+// Gets the bishop attacks for a given square and occupancy using magic bit shifts.
 inline U64 get_bishop_attacks(Square square, U64 occupancies) {
   U64 magic_lookup = occupancies & BISHOP_MASKS[square];
   magic_lookup *= BISHOP_MAGICS[square];
   magic_lookup >>= BISHOP_RELEVANT_BITS[square];
-  return BISHOP_ATTACKS[square][magic_lookup];
+  return BISHOP_MOVES[square][magic_lookup];
 }
 
 inline U64 get_xray_bishop_lookups(Square square, U64 occupancies) {
@@ -310,16 +372,15 @@ inline U64 get_xray_bishop_lookups(Square square, U64 occupancies) {
   return attacks ^ get_bishop_attacks(square, occupancies ^ (attacks & occupancies));
 }
 
+// Gets the queen attacks for a given square and occupancy using magic bit shifts.
 inline U64 get_queen_attacks(Square square, U64 occupancies) {
   return get_bishop_attacks(square, occupancies) | get_rook_attacks(square, occupancies);
 }
 
-U64 SQUARES_BETWEEN[64][64];
-U64 LINE_BETWEEN[64][64];
-U64 CHECK_BETWEEN[64][64];
 U64 PIN_BETWEEN[64][64];
 
-void init_extra_lookups() {
+// Initializes PIN_BETWEEN
+void init_pin_between() {
   U64 squares;
   for (int s1 = 0; s1 < 64; s1++) {
     int s1_row = s1 / 8;
@@ -337,60 +398,28 @@ void init_extra_lookups() {
 
       if (s1_row == s2_row || s1_col == s2_col) {
         // same row or column
-        SQUARES_BETWEEN[s1][s2] = mask_rook_attacks_otf(s1, squares) &
+        U64 rook_attacks = mask_rook_attacks_otf(s1, squares) &
+                           mask_rook_attacks_otf(s2, squares);
 
-          mask_rook_attacks_otf(s2, squares);
-        LINE_BETWEEN[s1][s2] = (
-          mask_rook_attacks_otf(s1, 0ULL) &
-          mask_rook_attacks_otf(s2, 0ULL) ) |
-          (SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2]);
-
-        CHECK_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | (LINE_BETWEEN[s1][s2] & KING_ATTACKS[s1]) | SQUARE_TO_BITBOARD[s2];
-
-        PIN_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | SQUARE_TO_BITBOARD[s2];
+        PIN_BETWEEN[s1][s2] = rook_attacks | SQUARE_TO_BITBOARD[s2];
 
       } else if (s1_diag == s2_diag || s1_anti_diag == s2_anti_diag) {
-        SQUARES_BETWEEN[s1][s2] = mask_bishop_attacks_otf(s1, squares) &
-                                  mask_bishop_attacks_otf(s2, squares);
+        // same diagonal
+        U64 bishop_attacks = mask_bishop_attacks_otf(s1, squares) &
+                             mask_bishop_attacks_otf(s2, squares);
 
-        LINE_BETWEEN[s1][s2] = (
-          mask_bishop_attacks_otf(s1, 0ULL) &
-          mask_bishop_attacks_otf(s2, 0ULL) ) |
-          (SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2]);
-
-        CHECK_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | (LINE_BETWEEN[s1][s2] & KING_ATTACKS[s1]) | SQUARE_TO_BITBOARD[s2];
-
-        PIN_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | SQUARE_TO_BITBOARD[s2];
+        PIN_BETWEEN[s1][s2] = bishop_attacks | SQUARE_TO_BITBOARD[s2];
 
       } else {
-        SQUARES_BETWEEN[s1][s2] = 0ULL;
-        LINE_BETWEEN[s1][s2] = 0ULL;
-        CHECK_BETWEEN[s1][s2] = 0ULL;
         PIN_BETWEEN[s1][s2] = 0ULL;
       }
     }
   }
 }
 
-U64 PAWN_ATTACKS[2][64];
-U64 PSEUDO_LEGAL_ATTACKS[6][64];
-
-void init_pseudo_legal() {
-  memcpy(PAWN_ATTACKS[WHITE], WHITE_PAWN_ATTACKS, sizeof(WHITE_PAWN_ATTACKS));
-  memcpy(PAWN_ATTACKS[BLACK], BLACK_PAWN_ATTACKS, sizeof(BLACK_PAWN_ATTACKS));
-  memcpy(PSEUDO_LEGAL_ATTACKS[KNIGHT], KNIGHT_ATTACKS, sizeof(KNIGHT_ATTACKS));
-  memcpy(PSEUDO_LEGAL_ATTACKS[KING], KING_ATTACKS, sizeof(KING_ATTACKS));
-  for (Square s = 0; s < 64; ++s) {
-    PSEUDO_LEGAL_ATTACKS[ROOK][s] = mask_rook_attacks_otf(s, 0ULL);
-    PSEUDO_LEGAL_ATTACKS[BISHOP][s] = mask_bishop_attacks_otf(s, 0ULL);
-    PSEUDO_LEGAL_ATTACKS[QUEEN][s] =
-        PSEUDO_LEGAL_ATTACKS[ROOK][s] | PSEUDO_LEGAL_ATTACKS[BISHOP][s];
-  }
-}
-
+// Populate all lookup tables. Should be called before setting a position or getting moves.
 void initialize_all_lookups() {
   init_rook_attacks();
   init_bishop_attacks();
-  init_extra_lookups();
-  init_pseudo_legal();
+  init_pin_between();
 }
