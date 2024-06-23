@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "bitboards.h"
 #include "movegen.h"
@@ -51,15 +52,8 @@ void test_perft(const char *fen, int depth, U64 expected_nodes) {
   }
 }
 
-int main(int argc, char *argv[]){
-
-  // initialize all lookups (must be called at the start)
-  initialize_all_lookups();
-  init_zobrist_table();
-
-
+void run_perft_tests() {
   // Perft tests
-  // These should all pass
   test_perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ", 6, 119060324);
   test_perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ", 5, 193690690);
   test_perft("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ", 6, 11030083);
@@ -69,7 +63,38 @@ int main(int argc, char *argv[]){
   test_perft("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1 ", 6,   179862938);
   test_perft("7k/8/8/p7/1P6/8/8/7K b - - 0 1 ", 6,   41874);
   test_perft("rnbqkb1r/ppppp1pp/7n/4Pp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3 ", 6,   244063299);
+}
 
+
+int main(int argc, char *argv[]){
+
+  // initialize all lookups (must be called at the start)
+  initialize_all_lookups();
+  init_zobrist_table();
+
+  // run_perft_tests();
+
+  char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ";
+  int depth = 6;
+
+  Position pos;
+  set_from_fen(&pos, fen);
+
+  clock_t start, end;
+  double cpu_time_used;
+  U64 nodes;
+
+  start = clock();
+  nodes = perft(&pos, 6);
+  end = clock();
+
+  cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+
+  printf("FEN:   %s\n", fen);
+  printf("DEPTH: %d\n", depth);
+  printf("NODES: %llu\n", nodes);
+  printf("TIME:  %f\n", cpu_time_used);
+  printf("NPS:   %f\n", nodes / cpu_time_used);
 
   return EXIT_SUCCESS;
 }
