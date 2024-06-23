@@ -149,7 +149,7 @@ void undo(Position *pos, Move *m){
         move_piece_quiet(pos, f1, h1);
       } else {
         move_piece_quiet(pos, g8, e8);
-        move_piece_quiet(pos, h8, f8);
+        move_piece_quiet(pos, f8, h8);
       }
       break;
 
@@ -167,7 +167,7 @@ void undo(Position *pos, Move *m){
     case EN_PASSANT:
       // Capturing en passant
       move_piece_quiet(pos, m->to, m->from);
-      put_piece(pos, PAWN, c ^ BLACK, m->to + (c == WHITE ? 8 : -8));
+      put_piece(pos, PAWN, c ^ BLACK, m->to + (c == WHITE ? -8 : 8));
       break;
 
     // Promoting to the given piece
@@ -237,10 +237,12 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   U64 diagonal_pin = 0ULL;
 
   U64 attacked = 0ULL;  // Squares king cannot move to
-  U64 checkmask = 0ULL; // 1 for all pieces checking king, else all 1s;
+  U64 checkmask = 0ULL; // 1 for all pieces checking king + path to king, else all 1s;
 
   // General purpose bitboards
-  U64 b1, b2, b3; 
+  U64 b1, b2, b3;
+
+  int checking_pieces = 0; // Number of pieces checking king
 
   // Generate orthogonal pin masks + checkmasks
   if (PSEUDO_LEGAL_ATTACKS[ROOK][my_king_square] & your_orthogonal_sliders) {
@@ -248,6 +250,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     U64 pinsHV = get_xray_rook_lookups(my_king_square, all_pieces) & your_orthogonal_sliders;
     while (attackHV) {
       checkmask |= PIN_BETWEEN[my_king_square][pop_lsb(&attackHV)];
+      checking_pieces++;
     }
     while (pinsHV) {
       orthogonal_pin |= PIN_BETWEEN[my_king_square][pop_lsb(&pinsHV)];
@@ -260,6 +263,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     U64 pinsD12 = get_xray_bishop_lookups(my_king_square, all_pieces) & your_diagonal_sliders;
     while (attackD12) {
       checkmask |= PIN_BETWEEN[my_king_square][pop_lsb(&attackD12)];
+      checking_pieces++;
     }
 
     while (pinsD12) {
@@ -269,7 +273,9 @@ Move* generate_legal_moves(Position *pos, Move *list) {
 
   // Generate knight pin masks + checkmasks
   // We can only ever be in check from a single knight at once: This can only have a single bit set
-  checkmask |= PSEUDO_LEGAL_ATTACKS[KNIGHT][my_king_square] & your_knights;
+  b1 = PSEUDO_LEGAL_ATTACKS[KNIGHT][my_king_square] & your_knights;
+  checkmask |= b1;
+  checking_pieces += (b1 != 0);
 
   // Generate pawn checkmasks
   checkmask |= PAWN_ATTACKS[me][my_king_square] & your_pawns;
@@ -292,23 +298,28 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   list = get_moves(my_king_square, KING_ATTACKS[my_king_square] & ~attacked & ~all_my_pieces & ~all_your_pieces, list, QUIET);
   list = get_moves(my_king_square, KING_ATTACKS[my_king_square] & ~attacked & ~all_my_pieces & all_your_pieces,  list, CAPTURE);
 
+  // If our king is in check from more than one piece, both checks cannot be blocked: the king is the only piece that can move
+  if (checking_pieces > 1) return list;
+
   // Castling
   // Generate kingside castling moves
-  if (!((pos->history[pos->ply].entry & OO_MASK[me]) | ((all_pieces | attacked) & OO_BLOCKERS_MASK[me]))) {
+  // if !((king / kingside rook moved) | (any pieces / attackers in the way) | (king in check))
+  if (!((pos->history[pos->ply].entry & OO_MASK[me]) | ((all_pieces | attacked) & OO_BLOCKERS_MASK[me]) | (my_king & attacked))) {
     Move m;
     m.flags = OO;
     if (me == WHITE) {
       m.from = e1;
-      m.to = h1;
+      m.to = g1;
     } else {
       m.from = e8;
-      m.to = h8;
+      m.to = g8;
     }
     *list++ = m;
   }
 
   // Generate queenside castling moves
-  if (!((pos->history[pos->ply].entry & OOO_MASK[me]) | ((all_pieces | (attacked & OOO_IGNORE_DANGER[me])) & OOO_BLOCKERS_MASK[me]))) {
+  // if !((king / queenside rook moved) | (any pieces / attackers in the way EXCEPT for the a+b files) | (king in check))
+  if (!((pos->history[pos->ply].entry & OOO_MASK[me]) | ((all_pieces | (attacked & OOO_IGNORE_DANGER[me])) & OOO_BLOCKERS_MASK[me]) | (my_king & attacked))) {
     Move m;
     m.flags = OOO;
     if (me == WHITE) {
@@ -386,12 +397,16 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     enpassant_right &= (b2 | ~diagonal_pin);
 
     // Prune orthogonal pins
-    // If we remove our pawn and the EP pawn, check if one of our opponent's orthogonal sliders can see king
-    b2 = get_rook_attacks(my_king_square, all_pieces ^ (b1 | enpassant_left));
-    enpassant_left &= -((b2 & your_orthogonal_sliders) == 0);
+    // We should not prune orthogonal pins if the king is aligned vertically to the piece,
+    // as the pawn taking en passant will block the check.
+    if (my_king & EP_RANK[me]){
+        // If we remove our pawn and the EP pawn, check if one of our opponent's orthogonal sliders can see king
+        b3 = get_rook_attacks(my_king_square, all_pieces ^ (b1 | enpassant_left));
+        enpassant_left &= -(((b3 & your_orthogonal_sliders) | b2) == 0);
 
-    b2 = get_rook_attacks(my_king_square, all_pieces ^ (b1 | enpassant_right));
-    enpassant_right &= -((b2 & your_orthogonal_sliders) == 0);
+        b3 = get_rook_attacks(my_king_square, all_pieces ^ (b1 | enpassant_right));
+        enpassant_right &= -(((b3 & your_orthogonal_sliders) | b2) == 0);
+    }
 
     // All pins have been pruned, add the moves
     Move move = {.to = get_lsb_idx(enpassant_target), .flags = EN_PASSANT};
@@ -432,7 +447,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     *list++ = move;
     move.flags = PR_ROOK;
     *list++ = move;
-    move.flags = PR_ROOK;
+    move.flags = PR_QUEEN;
     *list++ = move;
   }
 
@@ -458,7 +473,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     *list++ = move;
     move.flags = PC_ROOK;
     *list++ = move;
-    move.flags = PC_ROOK;
+    move.flags = PC_QUEEN;
     *list++ = move;
   }
 
@@ -484,7 +499,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     *list++ = move;
     move.flags = PC_ROOK;
     *list++ = move;
-    move.flags = PC_ROOK;
+    move.flags = PC_QUEEN;
     *list++ = move;
   }
 

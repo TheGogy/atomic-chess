@@ -48,8 +48,8 @@ U64 get_queen_attacks(Square square, U64 occupancies);
 // Get all pawn attacks at once for given color.
 static inline U64 get_all_pawn_attacks(U64 pawn_bb, Color c) {
   return c == WHITE ?
-    (pawn_bb & NOT_H_FILE) << 7 |
-    (pawn_bb & NOT_A_FILE) << 9
+    (pawn_bb & NOT_H_FILE) << 9 |
+    (pawn_bb & NOT_A_FILE) << 7
   :
     (pawn_bb & NOT_H_FILE) >> 7 |
     (pawn_bb & NOT_A_FILE) >> 9;

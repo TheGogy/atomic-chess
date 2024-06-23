@@ -37,7 +37,7 @@ const U64 KNIGHT_ATTACKS[64] = {
   0x400040200000000ULL, 0x800080500000000ULL, 0x1100110a00000000ULL, 0x2200221400000000ULL,
   0x4400442800000000ULL, 0x8800885000000000ULL, 0x100010a000000000ULL, 0x2000204000000000ULL,
   0x4020000000000ULL, 0x8050000000000ULL, 0x110a0000000000ULL, 0x22140000000000ULL,
-  0x44280000000000ULL, 0x0088500000000000ULL, 0x0010a00000000000ULL, 0x20400000000 
+  0x44280000000000ULL, 0x0088500000000000ULL, 0x0010a00000000000ULL, 0x20400000000000ULL
 };
 
 const U64 WHITE_PAWN_ATTACKS[64] = {
@@ -342,7 +342,7 @@ void init_extra_lookups() {
           mask_rook_attacks_otf(s2, squares);
         LINE_BETWEEN[s1][s2] = (
           mask_rook_attacks_otf(s1, 0ULL) &
-          mask_rook_attacks_otf(s2, 0ULL) ) | 
+          mask_rook_attacks_otf(s2, 0ULL) ) |
           (SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2]);
 
         CHECK_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | (LINE_BETWEEN[s1][s2] & KING_ATTACKS[s1]) | SQUARE_TO_BITBOARD[s2];
@@ -355,7 +355,7 @@ void init_extra_lookups() {
 
         LINE_BETWEEN[s1][s2] = (
           mask_bishop_attacks_otf(s1, 0ULL) &
-          mask_bishop_attacks_otf(s2, 0ULL) ) | 
+          mask_bishop_attacks_otf(s2, 0ULL) ) |
           (SQUARE_TO_BITBOARD[s1] | SQUARE_TO_BITBOARD[s2]);
 
         CHECK_BETWEEN[s1][s2] = SQUARES_BETWEEN[s1][s2] | (LINE_BETWEEN[s1][s2] & KING_ATTACKS[s1]) | SQUARE_TO_BITBOARD[s2];
