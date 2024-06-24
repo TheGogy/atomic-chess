@@ -1,4 +1,4 @@
-A basic chess bot written in pure C, with the intention to become an atomic chess bot.
+A basic chess bot written in pure C, with the intention to become an atomic chess bot. Still in development!
 
 I currently don't have a name for it.
 
