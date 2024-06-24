@@ -2,6 +2,7 @@
 #include "bitboards.h"
 #include "position.h"
 #include "tables.h"
+#include "sliders.h"
 
 // Plays a move in the given position
 void play(Position *pos, Move *m){
@@ -249,7 +250,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   // Generate orthogonal pin masks + checkmasks
   if (ROOK_ATTACKS[my_king_square] & your_orthogonal_sliders) {
     U64 attackHV = get_rook_attacks(my_king_square, all_pieces) & your_orthogonal_sliders;
-    U64 pinsHV = get_xray_rook_lookups(my_king_square, all_pieces) & your_orthogonal_sliders;
+    U64 pinsHV = get_xray_rook_attacks(my_king_square, all_pieces) & your_orthogonal_sliders;
     while (attackHV) {
       checkmask |= PIN_BETWEEN[my_king_square][pop_lsb(&attackHV)];
       checking_pieces++;
@@ -262,7 +263,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   // Generate diagonal pin masks + checkmasks
   if (BISHOP_ATTACKS[my_king_square] & your_diagonal_sliders) {
     U64 attackD12 = get_bishop_attacks(my_king_square, all_pieces) & your_diagonal_sliders;
-    U64 pinsD12 = get_xray_bishop_lookups(my_king_square, all_pieces) & your_diagonal_sliders;
+    U64 pinsD12 = get_xray_bishop_attacks(my_king_square, all_pieces) & your_diagonal_sliders;
     while (attackD12) {
       checkmask |= PIN_BETWEEN[my_king_square][pop_lsb(&attackD12)];
       checking_pieces++;
@@ -293,10 +294,16 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   attacked |= get_all_pawn_attacks(your_pawns, you);
   b1 = your_knights;
   while (b1) attacked |= KNIGHT_ATTACKS[pop_lsb(&b1)];
-  b1 = your_diagonal_sliders;
-  while (b1) attacked |= get_bishop_attacks(pop_lsb(&b1), all_pieces ^ my_king);
-  b1 = your_orthogonal_sliders;
-  while (b1) attacked |= get_rook_attacks(pop_lsb(&b1), all_pieces ^ my_king);
+
+  // We want to make sure that the squares behind the king are attacked as well:
+  // So we need to remove the king from the board
+  // https://lichess.org/editor/8/8/3r1k2/8/8/8/3K4/8_w_-_-_0_1?color=white
+  b1 = all_pieces ^ my_king;
+
+  b2 = your_diagonal_sliders;
+  while (b2) attacked |= get_bishop_attacks(pop_lsb(&b2), b1);
+  b2 = your_orthogonal_sliders;
+  while (b2) attacked |= get_rook_attacks(pop_lsb(&b2), b1);
   attacked |= KING_ATTACKS[your_king_square];
 
   // King moves
@@ -542,6 +549,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   // Best to handle pinned queens with the bishops / rooks; the lookups are the same
   // Generate bishop + diagonally pinned queen moves
   // Orthogonally pinned bishops can never move: filter them out immediately
+  // https://lichess.org/editor/8/8/3k4/8/1KB2r2/8/8/8_w_-_-_0_1?color=white
   b1 = my_bishops & ~orthogonal_pin;
   b2 = (my_queens | b1) & diagonal_pin; // Diagonally pinned bishops / queens
   while (b2) {
@@ -561,6 +569,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
 
   // Generate rook + orthogonally pinned queen moves
   // Diagonally pinned rooks can never move: filter them out immediately
+  // https://lichess.org/editor/8/8/3k4/4r3/8/2K3B1/8/8_w_-_-_0_1?color=white
   b1 = my_rooks & ~diagonal_pin;
   b2 = (my_queens | b1) & orthogonal_pin; // Orthogonally pinned rooks / queens
   while (b2) {

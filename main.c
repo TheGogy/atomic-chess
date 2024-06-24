@@ -71,10 +71,10 @@ void run_perft_tests() {
 int main(int argc, char *argv[]) {
 
   // initialize all lookups (must be called at the start)
-  initialize_all_lookups();
+  init_pin_between();
   init_zobrist_table();
 
-//   run_perft_tests();
+  run_perft_tests();
 
   char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ";
   int depth = 6;

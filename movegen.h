@@ -41,7 +41,7 @@ inline Move* get_moves(Square from, U64 to, Move *list, MoveFlag flag) {
     Move move = {
       .flag = flag,
       .from = from,
-      .to = (Square)pop_lsb(&to)
+      .to = pop_lsb(&to)
     };
     *list++ = move;
   }
