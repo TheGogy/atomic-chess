@@ -10,7 +10,6 @@
 
 void uci_position(Position *pos, const char *input) {
   // Run over the position multiple times (there may be multiple commands in there)
-  // printf("INPUT '%s'\n", input);
   if (strncmp(input, "position startpos", 17) == 0) {
     set_from_fen(pos, STARTPOS);
   } else if (strncmp(input, "position fen", 12) == 0) {
@@ -25,7 +24,7 @@ void uci_position(Position *pos, const char *input) {
     const char *moves = strstr(input, "moves") + 6;
     while (*moves) {
       char move_str[MAX_MOVE_STR_LEN];
-      sscanf(moves, "%4s", move_str);
+      sscanf(moves, "%5s", move_str);
       Move move = parse_move(pos, move_str);
 
       if (move.from != NO_SQUARE) {

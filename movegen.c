@@ -3,6 +3,7 @@
 #include "position.h"
 #include "tables.h"
 #include "sliders.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -604,15 +605,23 @@ Move* generate_legal_moves(Position *pos, Move *list) {
 }
 
 Move parse_move(Position *pos, const char *move_str) {
+
   Move move; // The move we want to return
   Move move_list[256];
   U64 n_moves;
+
+  int is_promotion = 0;
+
   // All the moves in the current position
   n_moves = generate_legal_moves(pos, move_list) - move_list;
 
   // Get the start and end squares from the move string
   move.from = string_to_square(move_str[0], move_str[1]);
   move.to = string_to_square(move_str[2], move_str[3]);
+
+  if (strlen(move_str) == 5 && isalpha(move_str[4])) {
+    is_promotion = 1;
+  }
 
   // Go through the move list and check if any of them are the same
   // as the move we are parsing
@@ -621,9 +630,25 @@ Move parse_move(Position *pos, const char *move_str) {
       move.from == move_list[i].from &&
       move.to == move_list[i].to
     ) {
-      // Return the move from the move list, as this contains
-      // all the correct move flags
-      return move_list[i];
+      // If it isn't a promotion, just return move
+      if (!is_promotion) return move_list[i];
+
+      if ((move.from % 8) == (move.to % 8)) {
+        switch (move_str[4]) {
+          case 'n': move.flag = PR_KNIGHT; break;
+          case 'b': move.flag = PR_BISHOP; break;
+          case 'r': move.flag = PR_ROOK;   break;
+          case 'q': move.flag = PR_QUEEN;  break;
+        }
+      } else {
+        switch (move_str[4]) {
+          case 'n': move.flag = PC_KNIGHT; break;
+          case 'b': move.flag = PC_BISHOP; break;
+          case 'r': move.flag = PC_ROOK;   break;
+          case 'q': move.flag = PC_QUEEN;  break;
+        }
+      }
+      return move;
     }
   }
 
