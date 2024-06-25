@@ -58,6 +58,10 @@ inline Color invert_color(Color c) {
   return (Color)(c ^ BLACK);
 }
 
+inline Square string_to_square(char file, char rank) {
+  return (Square)((rank - '1') * 8 + (file - 'a'));
+}
+
 void print_bitboard(U64 bitboard);
 
 #endif // !BITBOARDS_H

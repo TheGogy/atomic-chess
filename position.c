@@ -89,8 +89,8 @@ inline void move_piece_quiet(Position *pos, Square from, Square to) {
   pos->board[from] = NO_PIECE;
 }
 
-// Sets the position according to the given FEN.
-void set_from_fen(Position *pos, const char *fen) {
+// Sets the position according to the given FEN and returns the length.
+int set_from_fen(Position *pos, const char *fen) {
 
   // Clear the board for the position
   for (int i = 0; i < 12; i++) pos->pieces[i / 6][i % 6] = 0ULL;
@@ -168,6 +168,21 @@ void set_from_fen(Position *pos, const char *fen) {
     int rank = fen_ptr[1] - '0' - 1;
     pos->history[0].enpassant = (Square) rank * 8 + file;
   }
+
+  // Consume en passant square part
+  while (*fen_ptr != ' ') fen_ptr++; 
+  fen_ptr++;
+
+  // Consume halfmove clock
+  while (*fen_ptr != ' ') fen_ptr++; 
+  fen_ptr++;
+
+  // Consume fullmove clock
+  while (*fen_ptr != ' ') fen_ptr++; 
+  fen_ptr++;
+
+  // Return the length of the fen
+  return fen_ptr - fen;
 }
 
 // Gets the FEN from the position and stores it in the given string.
@@ -236,3 +251,4 @@ void print_position(Position *pos) {
   get_fen_from_pos(pos, fen);
   printf("FEN:                %s\n", fen);
 }
+

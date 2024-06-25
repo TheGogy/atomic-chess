@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <string.h>
 #include <getopt.h>
 
 #include "position.h"
 #include "tables.h"
 #include "perft.h"
-
+#include "uci.h"
 
 // Commnd line options
 const struct option long_options[] = {
@@ -71,11 +69,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // Turn off buffering for input / output (required for UCI)
-  setbuf(stdout, NULL);
-  setbuf(stdin, NULL);
-
-  printf("UCI not implemented yet!\n");
+  handle_uci();
 
   return EXIT_SUCCESS;
 }

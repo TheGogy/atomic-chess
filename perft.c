@@ -27,28 +27,6 @@ U64 perft(Position *pos, unsigned int depth) {
   return nodes;
 }
 
-void print_move(Move move) {
-  printf("%s%s", SQUARE_TO_STRING[move.from], SQUARE_TO_STRING[move.to]);
-  if (move.flag & (PROMOTIONS)) {
-    switch (move.flag) {
-      case PR_KNIGHT | PC_KNIGHT:
-        printf("n");
-        break;
-      case PR_BISHOP | PC_BISHOP:
-        printf("b");
-        break;
-      case PR_ROOK | PC_ROOK:
-        printf("r");
-        break;
-      case PR_QUEEN | PC_QUEEN:
-        printf("r");
-        break;
-      default:
-        break;
-    }
-  }
-  printf(": ");
-}
 
 void test_single_perft(const char *fen, int depth, int verbose) {
   Position pos;
@@ -69,9 +47,10 @@ void test_single_perft(const char *fen, int depth, int verbose) {
     n_moves = generate_legal_moves(&pos, move_list) - move_list;
     for (int i = 0; i < n_moves; i++) {
       play(&pos, &move_list[i]);
-      print_move(move_list[i]);
       moves_in_pos = perft(&pos, depth - 1);
-      printf("%llu\n", moves_in_pos);
+      char move_str[6];
+      get_move_str(move_list[i], move_str);
+      printf("%s: %llu\n", move_str, moves_in_pos);
       nodes += moves_in_pos;
       undo(&pos, &move_list[i]);
     }

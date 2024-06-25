@@ -3,6 +3,8 @@
 #include "position.h"
 #include "tables.h"
 #include "sliders.h"
+#include <stdio.h>
+#include <string.h>
 
 // Plays a move in the given position
 void play(Position *pos, Move *m){
@@ -599,4 +601,50 @@ Move* generate_legal_moves(Position *pos, Move *list) {
   }
 
   return list;
+}
+
+Move parse_move(Position *pos, const char *move_str) {
+  Move move; // The move we want to return
+  Move move_list[256];
+  U64 n_moves;
+  // All the moves in the current position
+  n_moves = generate_legal_moves(pos, move_list) - move_list;
+
+  // Get the start and end squares from the move string
+  move.from = string_to_square(move_str[0], move_str[1]);
+  move.to = string_to_square(move_str[2], move_str[3]);
+
+  // Go through the move list and check if any of them are the same
+  // as the move we are parsing
+  for (int i = 0; i < n_moves; i++) {
+    if (
+      move.from == move_list[i].from &&
+      move.to == move_list[i].to
+    ) {
+      // Return the move from the move list, as this contains
+      // all the correct move flags
+      return move_list[i];
+    }
+  }
+
+  // The move must not be in the move list: return invalid move
+  move.from = NO_SQUARE;
+
+  return move;
+}
+
+void get_move_str(Move move, char *move_str) {
+  // Initialize move string
+  snprintf(move_str, MAX_MOVE_STR_LEN, "%s%s", SQUARE_TO_STRING[move.from], SQUARE_TO_STRING[move.to]);
+
+  // Check for promotions
+  if      (move.flag == PR_KNIGHT || move.flag == PC_KNIGHT) move_str[4] = 'n';
+  else if (move.flag == PR_BISHOP || move.flag == PC_BISHOP) move_str[4] = 'b';
+  else if (move.flag == PR_ROOK   || move.flag == PC_ROOK  ) move_str[4] = 'r';
+  else if (move.flag == PR_QUEEN  || move.flag == PC_QUEEN ) move_str[4] = 'q';
+  else move_str[4] = '\0';
+
+  // Add the string termination character
+  move_str[5] = '\0';
+
 }
