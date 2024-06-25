@@ -2,7 +2,8 @@ A basic chess bot written in pure C, with the intention to become an atomic ches
 
 I currently don't have a name for it.
 
-Current perft score: 412208783.56 nodes / sec
+Current perft score: 41988707.944601 nodes / sec
+From starter position at depth 7
 
 ## Installation
 

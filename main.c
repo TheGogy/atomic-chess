@@ -19,7 +19,10 @@ const struct option long_options[] = {
 
 void print_help() {
   printf(
-    "Usage:\n"
+    "Usage: [options] [command]\n"
+    "Options:\n"
+    "-v                         Verbose: prints more info about command\n"
+    "Command:\n"
     "-h, --help:                Prints this menu.\n"
     "-t, --run-tests:           Runs a series of perft tests to ensure correct move generation.\n"
     "-p, --perft [fen] [depth]  Runs a perft test on the given fen up to the given depth.\n"
@@ -32,18 +35,17 @@ int main(int argc, char *argv[]) {
   init_pin_between();
   init_zobrist_table();
 
-  // Turn off buffering for input / output (required for UCI)
-  setbuf(stdout, NULL);
-  setbuf(stdin, NULL);
-
-  int opt;
-  int option_index = 0;
-
   // If there are options, parse them.
   // Otherwise, go through to UCI interface.
   if (argc > 1) {
-    while ((opt = getopt_long(argc, argv, "htp", long_options, &option_index)) != 0) {
+    int opt;
+    int option_index = 0;
+    int verbose = 0;
+    while ((opt = getopt_long(argc, argv, "vhtp", long_options, &option_index)) != 0) {
       switch (opt) {
+        case 'v':
+          verbose = 1;
+          break;
         case 'h':
           print_help();
           exit(EXIT_SUCCESS);
@@ -54,7 +56,7 @@ int main(int argc, char *argv[]) {
           if (optind < argc - 1) {
             char *fen = argv[optind];
             int depth = atoi(argv[optind + 1]);
-            test_single_perft(fen, depth);
+            test_single_perft(fen, depth, verbose);
             // Move index past the fen + depth
             optind += 2;
             exit(EXIT_SUCCESS);
@@ -68,6 +70,10 @@ int main(int argc, char *argv[]) {
       }
     }
   }
+
+  // Turn off buffering for input / output (required for UCI)
+  setbuf(stdout, NULL);
+  setbuf(stdin, NULL);
 
   printf("UCI not implemented yet!\n");
 

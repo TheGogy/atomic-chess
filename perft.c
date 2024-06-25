@@ -1,4 +1,5 @@
 #include "perft.h"
+#include "bitboards.h"
 #include "movegen.h"
 #include "position.h"
 #include <time.h>
@@ -14,7 +15,7 @@ U64 perft(Position *pos, unsigned int depth) {
 
   n_moves = generate_legal_moves(pos, move_list) - move_list;
 
-  if (depth == 1) {
+  if (depth <= 1) {
     return n_moves;
   }
 
@@ -26,7 +27,30 @@ U64 perft(Position *pos, unsigned int depth) {
   return nodes;
 }
 
-void test_single_perft(const char *fen, int depth) {
+void print_move(Move move) {
+  printf("%s%s", SQUARE_TO_STRING[move.from], SQUARE_TO_STRING[move.to]);
+  if (move.flag & (PROMOTIONS)) {
+    switch (move.flag) {
+      case PR_KNIGHT | PC_KNIGHT:
+        printf("n");
+        break;
+      case PR_BISHOP | PC_BISHOP:
+        printf("b");
+        break;
+      case PR_ROOK | PC_ROOK:
+        printf("r");
+        break;
+      case PR_QUEEN | PC_QUEEN:
+        printf("r");
+        break;
+      default:
+        break;
+    }
+  }
+  printf(": ");
+}
+
+void test_single_perft(const char *fen, int depth, int verbose) {
   Position pos;
   set_from_fen(&pos, fen);
   print_position(&pos);
@@ -34,17 +58,36 @@ void test_single_perft(const char *fen, int depth) {
   printf("Testing up to depth %d\n", depth);
   clock_t start, end;
   double cpu_time_used;
-  U64 nodes;
+  U64 nodes = 0;
 
-  start = clock();
-  nodes = perft(&pos, 6);
-  end = clock();
+  if (verbose) {
+    Move move_list[256];
+    U64 n_moves, moves_in_pos;
+
+    start = clock();
+
+    n_moves = generate_legal_moves(&pos, move_list) - move_list;
+    for (int i = 0; i < n_moves; i++) {
+      play(&pos, &move_list[i]);
+      print_move(move_list[i]);
+      moves_in_pos = perft(&pos, depth - 1);
+      printf("%llu\n", moves_in_pos);
+      nodes += moves_in_pos;
+      undo(&pos, &move_list[i]);
+    }
+    end = clock();
+
+  } else {
+    start = clock();
+    nodes = perft(&pos, depth);
+    end = clock();
+  }
 
   cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+  printf("TOTAL NODES: %llu\n", nodes);
+  printf("TIME:        %f\n", cpu_time_used);
+  printf("NPS:         %f\n", nodes / cpu_time_used);
 
-  printf("NODES: %llu\n", nodes);
-  printf("TIME:  %f\n", cpu_time_used);
-  printf("NPS:   %f\n", nodes / cpu_time_used);
 }
 
 void test_perft(const char *fen, int depth, U64 expected_nodes) {
