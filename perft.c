@@ -73,7 +73,7 @@ void test_single_perft(const char *fen, int depth, int verbose) {
 
 // Runs a perft test according to a pre defined number of nodes.
 // Returns 1 if test passes, 0 if it fails.
-int test_perft(const char *fen, int depth, U64 expected_nodes) {
+int run_test(const char *fen, int depth, U64 expected_nodes) {
   Position pos;
   set_from_fen(&pos, fen);
   U64 nodes = perft(&pos, depth);
@@ -123,7 +123,7 @@ void test_perft_from_file(const char *filename) {
         U64 expected_nodes;
         if (sscanf(token, "D%d %llu", &depth, &expected_nodes) == 2) {
           // Test the given perft and update counters
-          tests_passed += test_perft(fen, depth, expected_nodes);
+          tests_passed += run_test(fen, depth, expected_nodes);
           total_tests++;
         }
       }
@@ -133,6 +133,7 @@ void test_perft_from_file(const char *filename) {
 
   // Show results
   printf("\n\n");
+  printf("Perft results for %s\n", filename);
   printf("Total tests:  %d\n", total_tests);
   printf("Tests passed: %d\n", tests_passed);
 }

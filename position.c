@@ -163,6 +163,7 @@ int set_from_fen(Position *pos, const char *fen) {
   // Go to next part of the fen
   fen_ptr++;
 
+  // En passant square
   if (*fen_ptr != '-') {
     int file = fen_ptr[0] - 'a';
     int rank = fen_ptr[1] - '0' - 1;
@@ -173,12 +174,12 @@ int set_from_fen(Position *pos, const char *fen) {
   while (*fen_ptr != ' ') fen_ptr++; 
   fen_ptr++;
 
-  // Consume halfmove clock
-  while (*fen_ptr != ' ') fen_ptr++; 
+  // Consume halfmove clock if it exists (currently we do not parse it)
+  while (*fen_ptr && *fen_ptr != ' ') fen_ptr++;
   fen_ptr++;
 
-  // Consume fullmove clock
-  while (*fen_ptr != ' ') fen_ptr++; 
+  // Consume fullmove clock if it exists
+  while (*fen_ptr && *fen_ptr != ' ') fen_ptr++;
   fen_ptr++;
 
   // Return the length of the fen
