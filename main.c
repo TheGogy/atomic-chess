@@ -21,8 +21,8 @@ void print_help() {
     "Options:\n"
     "-v                         Verbose: prints more info about command\n"
     "Command:\n"
-    "-h, --help:                Prints this menu.\n"
-    "-t, --run-tests:           Runs a series of perft tests to ensure correct move generation.\n"
+    "-h, --help                 Prints this menu.\n"
+    "-t, --run-tests [path]     Runs a series of perft tests to ensure correct move generation.\n"
     "-p, --perft [fen] [depth]  Runs a perft test on the given fen up to the given depth.\n"
   );
 }
@@ -44,24 +44,32 @@ int main(int argc, char *argv[]) {
         case 'v':
           verbose = 1;
           break;
+
         case 'h':
           print_help();
           exit(EXIT_SUCCESS);
+
         case 't':
-          run_perft_tests();
-          exit(EXIT_SUCCESS);
+          if (optind < argc) {
+            const char *filename = argv[optind];
+            test_perft_from_file(filename);
+            exit(EXIT_SUCCESS);
+          } else {
+            fprintf(stderr, "Option --test requires an argument: <path>\n");
+            exit(EXIT_FAILURE);
+          }
+
         case 'p':
           if (optind < argc - 1) {
             char *fen = argv[optind];
             int depth = atoi(argv[optind + 1]);
             test_single_perft(fen, depth, verbose);
-            // Move index past the fen + depth
-            optind += 2;
             exit(EXIT_SUCCESS);
           } else {
             fprintf(stderr, "Option --perft requires two arguments: <fen> <depth>\n");
             exit(EXIT_FAILURE);
           }
+
         default:
           print_help();
           exit(EXIT_FAILURE);

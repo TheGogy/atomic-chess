@@ -7,7 +7,7 @@
 
 U64 perft(Position *pos, unsigned int depth);
 void test_single_perft(const char *fen, int depth, int verbose);
-void test_perft(const char *fen, int depth, U64 expected_nodes);
-void run_perft_tests();
+int test_perft(const char *fen, int depth, U64 expected_nodes);
+void test_perft_from_file(const char *filename);
 
 #endif // !SLIDERS_H

@@ -9,6 +9,9 @@ EXEC = atom
 
 all: $(EXEC)
 
+atomic: CFLAGS += -DATOMIC
+atomic: $(EXEC)
+
 $(EXEC): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $(EXEC)
 

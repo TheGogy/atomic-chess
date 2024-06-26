@@ -2,6 +2,8 @@
 #include "bitboards.h"
 #include "movegen.h"
 #include "position.h"
+#include <ctype.h>
+#include <string.h>
 #include <time.h>
 
 #include <stdio.h>
@@ -27,7 +29,7 @@ U64 perft(Position *pos, unsigned int depth) {
   return nodes;
 }
 
-
+// Tests a single perft value. Good for debugging purposes.
 void test_single_perft(const char *fen, int depth, int verbose) {
   Position pos;
   set_from_fen(&pos, fen);
@@ -69,27 +71,68 @@ void test_single_perft(const char *fen, int depth, int verbose) {
 
 }
 
-void test_perft(const char *fen, int depth, U64 expected_nodes) {
+// Runs a perft test according to a pre defined number of nodes.
+// Returns 1 if test passes, 0 if it fails.
+int test_perft(const char *fen, int depth, U64 expected_nodes) {
   Position pos;
   set_from_fen(&pos, fen);
   U64 nodes = perft(&pos, depth);
   if (nodes == expected_nodes) {
     printf("\033[0;32m[PASS]\033[0;0m %s || Depth: %d\n", fen, depth);
+    return 1;
   } else {
     printf("\033[0;31m[FAIL]\033[0;0m %s || Depth: %d || EXPECTED: %llu -- RETURNED: %llu\n",
            fen, depth, expected_nodes, nodes);
+    return 0;
   }
 }
 
-void run_perft_tests() {
-  // Perft tests
-  test_perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ", 6, 119060324);
-  test_perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ", 5, 193690690);
-  test_perft("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ", 6, 11030083);
-  test_perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 5, 15833292);
-  test_perft("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8 ", 5,  89941194);
-  test_perft("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 ", 5,   164075551);
-  test_perft("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1 ", 6,   179862938);
-  test_perft("7k/8/8/p7/1P6/8/8/7K b - - 0 1 ", 6,   41874);
-  test_perft("rnbqkb1r/ppppp1pp/7n/4Pp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 3 ", 6,   244063299);
+// Reads a perft test file and tests each of the values.
+void test_perft_from_file(const char *filename) {
+  FILE *file = fopen(filename, "r");
+  if (!file) {
+    perror("Error opening file");
+    return;
+  }
+
+  int tests_passed = 0;
+  int total_tests = 0;
+
+  char line[1024];
+  while (fgets(line, sizeof(line), file)) {
+    // Remove newline character from the end of the line
+    line[strcspn(line, "\n")] = '\0';
+
+    // Split the line into FEN and perft values
+    char *fen = strtok(line, ";");
+
+    // If the line is empty, continue
+    if (!fen) continue;
+
+    // Print divider
+    printf("\n################################################################\n\n");
+
+    char *token;
+    while ((token = strtok(NULL, ";")) != NULL) {
+      // Skip leading spaces
+      while (*token == ' ') token++;
+
+      // Check if the token starts with 'D' indicating a depth value
+      if (token[0] == 'D' && isdigit(token[1])) {
+        int depth;
+        U64 expected_nodes;
+        if (sscanf(token, "D%d %llu", &depth, &expected_nodes) == 2) {
+          // Test the given perft and update counters
+          tests_passed += test_perft(fen, depth, expected_nodes);
+          total_tests++;
+        }
+      }
+    }
+  }
+  fclose(file);
+
+  // Show results
+  printf("\n\n");
+  printf("Total tests:  %d\n", total_tests);
+  printf("Tests passed: %d\n", tests_passed);
 }
