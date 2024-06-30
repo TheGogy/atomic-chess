@@ -22,10 +22,10 @@ void init_pin_between();
 
 // Get all the squares attacked by the pawns of the given color.
 static inline U64 get_all_pawn_attacks(U64 pawn_bb, Color c) {
-  return c == WHITE ?
+    return c == WHITE ?
     (pawn_bb & NOT_H_FILE) << 9 |
     (pawn_bb & NOT_A_FILE) << 7
-  :
+    :
     (pawn_bb & NOT_H_FILE) >> 7 |
     (pawn_bb & NOT_A_FILE) >> 9;
 }

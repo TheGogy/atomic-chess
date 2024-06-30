@@ -8,18 +8,22 @@
 #define FEN_BUFFER_SIZE 100
 
 typedef struct undoinfo {
-  U64 entry;
-  Piece captured;
-  Square enpassant;
+    U64 entry;              // All pieces that have moved
+    Square enpassant;       // The current enpassant square
+#ifdef ATOMIC
+    U64 captured;           // Atomic capture info (requires space for multiple pieces)
+#else
+    Piece captured;         // Regular capture info (Only one piece can be captured per move)
+#endif // ATOMIC
 } Undoinfo;
 
 typedef struct position {
-  U64 pieces[2][6];       // Occupancy boards for all pieces
-  Piece board[64];        // Overall board state, contains Pieces
-  Color side_to_play;     // Marker for which side moves next
-  int ply;                // Number of moves played
-  U64 zobrist_hash;       // Current Zobrist hash
-  Undoinfo history[256];  // Game history
+    U64 pieces[2][6];       // Occupancy boards for all pieces
+    Piece board[64];        // Overall board state, contains Pieces
+    Color side_to_play;     // Marker for which side moves next
+    int ply;                // Number of moves played
+    U64 zobrist_hash;       // Current Zobrist hash
+    Undoinfo history[256];  // Game history
 } Position;
 
 // Castling masks

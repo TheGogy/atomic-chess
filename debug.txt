@@ -1,3 +1,0 @@
-COMMAND isready
-COMMAND quit
---- END ---

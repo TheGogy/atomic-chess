@@ -1,9 +1,9 @@
 CC = gcc
 LIBS = -lm
-CFLAGS = -Wall -Wextra -Wpedantic -std=gnu99 -Ofast -flto -march=native -fomit-frame-pointer -foptimize-sibling-calls -fprefetch-loop-arrays -falign-functions $(LIBS)
+CFLAGS = -Wall -Wextra -Wpedantic -std=gnu99 -Ofast -flto -march=native -fomit-frame-pointer -foptimize-sibling-calls -fprefetch-loop-arrays -falign-functions -Wno-sign-compare -Wno-char-subscripts $(LIBS)
 SRCS = sliders.c bitboards.c tables.c position.c movegen.c perft.c uci.c main.c
 OBJS = $(SRCS:.c=.o)
-EXEC = atom
+	EXEC = atom
 
 .PHONY: all clean install uninstall
 
