@@ -22,4 +22,4 @@ make atomic
 
 ## Inspiration
 
-Move generation takes elements from [Surge](#https://github.com/nkarve/surge) by [nkarve](#https://github.com/nkarve), as well as [Gigantua](#https://github.com/Gigantua/Gigantua) by [Daniel Inführ](#https://github.com/Gigantua), with some parts written from scratch.
+Move generation takes elements from [Surge](https://github.com/nkarve/surge) by [nkarve](https://github.com/nkarve), as well as [Gigantua](https://github.com/Gigantua/Gigantua) by [Daniel Inführ](https://github.com/Gigantua), with some parts written from scratch.
