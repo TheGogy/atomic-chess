@@ -1,4 +1,3 @@
-#include "perft.h"
 #include "bitboards.h"
 #include "movegen.h"
 #include "position.h"
@@ -11,8 +10,6 @@
 // Perft function, used to measure the speed of the move generator.
 // https://www.chessprogramming.org/Perft
 U64 perft(Position *pos, unsigned int depth) {
-
-    // print_position(pos);
 
     if (depth == 0) {
         return 1;

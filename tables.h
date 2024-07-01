@@ -2,8 +2,8 @@
 
 #ifndef TABLES_H
 #define TABLES_H
-#include "position.h"
 #include "bitboards.h"
+#include "position.h"
 
 // Piece attack lookups. Assumes empty board.
 // Ensure that the initialization functions are called before

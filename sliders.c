@@ -1,5 +1,6 @@
-#include "sliders.h"
 #include "bitboards.h"
+#include "sliders.h"
+
 #include <immintrin.h>
 
 // Pre computed split pext lookup tables
@@ -361,7 +362,7 @@ inline U64 get_xray_rook_attacks(Square square, U64 occupancies){
     return attacks ^ get_rook_attacks(square, occupancies ^ (attacks & occupancies));
 }
 
-U64 get_xray_bishop_attacks(Square square, U64 occupancies){
+inline U64 get_xray_bishop_attacks(Square square, U64 occupancies){
     U64 attacks = get_bishop_attacks(square, occupancies);
     return attacks ^ get_bishop_attacks(square, occupancies ^ (attacks & occupancies));
 }

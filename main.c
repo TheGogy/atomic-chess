@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <getopt.h>
 
+#include "bitboards.h"
+#include "perft.h"
 #include "movegen.h"
 #include "position.h"
 #include "tables.h"
-#include "perft.h"
 #include "uci.h"
 
 // Commnd line options
@@ -35,14 +36,16 @@ int main(int argc, char *argv[]) {
     init_zobrist_table();
 
     // Position pos;
-    // set_from_fen(&pos, "1k1r4/3r4/3r4/8/8/3R4/3K4/8 w - - 0 1");
+    // set_from_fen(&pos, "rnb1kbnr/pp1ppppp/8/q1p5/1P1P4/8/P1P1PPPP/RNBQKBNR w KQkq - 0 1");
     // print_position(&pos);
     //
     // Move move_list[256];
     // U64 n_moves = generate_legal_moves(&pos, move_list) - move_list;
     // for (int i = 0; i < n_moves; i++) {
+    //     printf("About to play move: %s%s - %s\n", SQUARE_TO_STRING[move_list[i].from], SQUARE_TO_STRING[move_list[i].to], MOVETYPE_TO_STR[move_list[i].flag]);
     //     getchar();
     //     play(&pos, &move_list[i]);
+    //     printf("Current capture info 0x%llx\n", pos.history[pos.ply].captured);
     //     print_position(&pos);
     //     getchar();
     //     undo(&pos, &move_list[i]);

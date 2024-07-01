@@ -1,5 +1,5 @@
-#include "position.h"
 #include "bitboards.h"
+#include "position.h"
 #include <ctype.h>
 #include <stdio.h>
 

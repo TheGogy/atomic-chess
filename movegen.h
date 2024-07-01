@@ -5,7 +5,6 @@
 #include "tables.h"
 #include "bitboards.h"
 #include "position.h"
-#include "uci.h"
 
 #define MAX_MOVE_STR_LEN 6
 
@@ -50,6 +49,7 @@ inline Move* get_moves(Square from, U64 to, Move *list, MoveFlag flag) {
     return list;
 }
 
+
 void play(Position *pos, Move *m);
 void undo(Position *pos, Move *m);
 
@@ -58,5 +58,14 @@ Move* generate_legal_moves(Position *pos, Move *list);
 Move parse_move(Position *pos, const char *move_str);
 
 void get_move_str(Move move, char *move_str);
+
+// Checks if a move is legal with atomic rules, and if it is then it adds it to
+// the move list. Otherwise, it does nothing.
+Move *atomic_add_move(Move *list, Color me, Color you, U64 all_pieces,
+                      U64 all_pawns, U64 all_your_pieces,
+                      U64 your_orthogonal_sliders, U64 your_diagonal_sliders,
+                      U64 your_knights, U64 your_pawns, Square from_sq,
+                      Square to_sq, Square my_king_square,
+                      int include_promotions, int include_enpassant);
 
 #endif // !MOVEGEN_H

@@ -1,6 +1,6 @@
-#include "tables.h"
 #include "bitboards.h"
 #include "sliders.h"
+#include "tables.h"
 
 // Attack bitboard for a king on a given square.
 // Assumes no other pieces on board.

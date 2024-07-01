@@ -1,6 +1,6 @@
 # Atom
 
-A basic (atomic) chess bot written in pure C. Still in development!
+A basic (atomic) chess bot written in pure C. Still in development, expect many bugs!
 
 Current perft score:
 

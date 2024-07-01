@@ -1,10 +1,10 @@
-#include "uci.h"
 #include "bitboards.h"
 #include "movegen.h"
 #include "position.h"
+#include "uci.h"
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
