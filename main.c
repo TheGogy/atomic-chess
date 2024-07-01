@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     init_zobrist_table();
 
     // Position pos;
-    // set_from_fen(&pos, "8/3k1n2/4ppp1/8/8/8/3K1R2/8 w - - 0 1");
+    // set_from_fen(&pos, "1k1r4/3r4/3r4/8/8/3R4/3K4/8 w - - 0 1");
     // print_position(&pos);
     //
     // Move move_list[256];

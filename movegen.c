@@ -327,7 +327,7 @@ void undo(Position *pos, Move *m){
 
 // Generates all legal moves for the given position and increments pointer to
 // last move in move list
-Move* generate_legal_moves(Position *pos, Move *list) {
+Move* generate_legal_moves_standard(Position *pos, Move *list) {
     const Color me = pos->side_to_play;
     const Color you = me ^ BLACK;
 
@@ -355,7 +355,7 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     // Occupancy bitboards for all pieces
     const U64 all_pieces = all_my_pieces | all_your_pieces;
 
-    // King squares
+    // King square
     const Square my_king_square = get_lsb_idx(my_king);
 
     U64 orthogonal_pin = 0ULL;
@@ -511,8 +511,8 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     b1 = pawns_push_double & ~orthogonal_pin;
     b2 = pawns_push_double & (me == WHITE ? (orthogonal_pin >> 16) : (orthogonal_pin << 16));
     pawns_push_double = (b1 | b2);
-    
-    
+
+
     // Get en passant targets
     const U64 enpassant_target = SQUARE_TO_BITBOARD[pos->history[pos->ply].enpassant];
 
@@ -721,6 +721,347 @@ Move* generate_legal_moves(Position *pos, Move *list) {
     }
 
     return list;
+}
+
+// Checks if a move is legal with atomic rules, and if it is then it adds it to
+// the move list. Otherwise, it does nothing.
+inline Move *atomic_add_move(Move *list, Color me, Color you,
+                        U64 all_pieces, U64 all_pawns, U64 all_your_pieces,
+                        U64 your_orthogonal_sliders, U64 your_diagonal_sliders,
+                        U64 your_knights, U64 your_pawns,
+                        Square from_sq, Square to_sq,
+                        Square my_king_square, int include_promotions) {
+
+
+    const U64 from = SQUARE_TO_BITBOARD[from_sq];
+    const U64 to = SQUARE_TO_BITBOARD[to_sq];
+    const U64 explosion = to | KING_ATTACKS[to_sq];
+
+    // All pieces after capture.
+    // We want to remove the attacker, the defender, and all
+    // other pieces.
+    const U64 relevant_pieces = all_pieces ^ (from | to | ((all_pieces ^ all_pawns) & explosion));
+
+    // Do not add the move if it allows the king to be in check
+    if (unlikely(get_rook_attacks(my_king_square, relevant_pieces) & your_orthogonal_sliders)) {
+        return list;
+    }
+
+    if (unlikely(get_bishop_attacks(my_king_square, relevant_pieces) & your_diagonal_sliders)) {
+        return list;
+    }
+
+    if (unlikely(KNIGHT_ATTACKS[my_king_square] & your_knights)) {
+        return list;
+    }
+
+    if (unlikely(PAWN_ATTACKS[you][my_king_square] & your_pawns)) {
+        return list;
+    }
+
+    // Add promotion info if required
+    if (unlikely(include_promotions && (from & DOUBLE_PUSH_RANK[you]))) {
+        if (unlikely(to & all_your_pieces)) {
+            Move m;
+            m.from = from_sq;
+            m.to = (me == WHITE ? (from_sq + 8) : (from_sq - 8));
+            m.flag = PC_KNIGHT;
+            *list++ = m;
+            m.flag = PC_BISHOP;
+            *list++ = m;
+            m.flag = PC_ROOK;
+            *list++ = m;
+            m.flag = PC_QUEEN;
+            *list++ = m;
+            return list;
+        } else {
+            Move m;
+            m.from = from_sq;
+            m.to = (me == WHITE ? (from_sq + 8) : (from_sq - 8));
+            m.flag = PR_KNIGHT;
+            *list++ = m;
+            m.flag = PR_BISHOP;
+            *list++ = m;
+            m.flag = PR_ROOK;
+            *list++ = m;
+            m.flag = PR_QUEEN;
+            *list++ = m;
+            return list;
+        }
+    }
+
+    // Add the move
+    Move m = {.flag = CAPTURE, .from = from_sq, .to = to_sq};
+    *list++ = m;
+
+    return list;
+}
+
+// Generates all legal moves for the given position and increments pointer to
+// last move in move list
+Move* generate_legal_moves_atomic(Position *pos, Move *list) {
+
+    const Color me = pos->side_to_play;
+    const Color you = me ^ BLACK;
+
+    // Occupancy bitboards for a single type of piece
+    const U64 my_king = pos->pieces[me][KING];
+
+    const U64 your_king = pos->pieces[you][KING];
+    const U64 my_pawns = pos->pieces[me][PAWN];
+    const U64 your_pawns = pos->pieces[you][PAWN];
+    const U64 my_knights = pos->pieces[me][KNIGHT];
+    const U64 your_knights = pos->pieces[you][KNIGHT];
+    const U64 my_bishops = pos->pieces[me][BISHOP];
+    const U64 your_bishops = pos->pieces[you][BISHOP];
+    const U64 my_rooks = pos->pieces[me][ROOK];
+    const U64 your_rooks = pos->pieces[you][ROOK];
+    const U64 my_queens = pos->pieces[me][QUEEN];
+    const U64 your_queens = pos->pieces[you][QUEEN];
+
+    // Occupancy bitboards for pieces of a given side / type
+    const U64 all_my_pieces = my_pawns | my_knights | my_bishops | my_rooks | my_queens | my_king;
+    const U64 all_your_pieces = your_pawns | your_knights | your_bishops | your_rooks | your_queens | your_king;
+    const U64 your_orthogonal_sliders = your_rooks | your_queens;
+    const U64 your_diagonal_sliders = your_bishops | your_queens;
+
+    // Occupancy bitboards for all pieces
+    const U64 all_pieces = all_my_pieces | all_your_pieces;
+
+    // King square
+    const Square my_king_square = get_lsb_idx(my_king);
+
+    // General purpose bitboards for move generation
+    U64 b1, b2, b3;
+
+    // Get attacked squares
+    U64 attacked = get_all_pawn_attacks(your_pawns, you);
+    b1 = your_knights;
+    while (b1) attacked |= KNIGHT_ATTACKS[pop_lsb(&b1)];
+    b1 = all_pieces ^ my_king;
+    b2 = your_diagonal_sliders;
+    while (b2) attacked |= get_bishop_attacks(pop_lsb(&b2), b1);
+    b2 = your_orthogonal_sliders;
+    while (b2) attacked |= get_rook_attacks(pop_lsb(&b2), b1);
+
+    // We do not need to add king attacks: in atomic chess, the kings can touch.
+    // This is because kings cannot take, as they would explode.
+
+    list = get_moves(my_king_square, KING_ATTACKS[my_king_square] & ~attacked & ~all_my_pieces & ~all_your_pieces,  list, QUIET);
+
+    // Castling
+    // Generate kingside castling moves
+    // if !((king / kingside rook moved) | (any pieces / attackers in the way) | (king in check))
+    if (unlikely(!((pos->history[pos->ply].entry & OO_MASK[me]) | ((all_pieces | attacked) & OO_BLOCKERS_MASK[me]) | (my_king & attacked)))) {
+        Move m;
+        m.flag = OO;
+        if (me == WHITE) {
+            m.from = e1;
+            m.to = g1;
+        } else {
+            m.from = e8;
+            m.to = g8;
+        }
+        *list++ = m;
+    }
+
+    // Generate queenside castling moves
+    // if !((king / queenside rook moved) | (any pieces / attackers in the way EXCEPT for the a+b files) | (king in check))
+    if (unlikely(!((pos->history[pos->ply].entry & OOO_MASK[me]) | ((all_pieces | (attacked & OOO_IGNORE_DANGER[me])) & OOO_BLOCKERS_MASK[me]) | (my_king & attacked)))) {
+        Move m;
+        m.flag = OOO;
+        if (me == WHITE) {
+            m.from = e1;
+            m.to = c1;
+        } else {
+            m.from = e8;
+            m.to = c8;
+        }
+        *list++ = m;
+    }
+
+    // Generate pawn moves
+    // Pushes
+    b1 = my_pawns & (me == WHITE ? (~all_pieces >> 8) : (~all_pieces << 8)); // These pieces can push once
+    b2 = b1 & DOUBLE_PUSH_RANK[me] & (me == WHITE ? (~all_pieces >> 16) : (~all_pieces << 16)); // These pawns can double push
+
+    while (b2) {
+        Square from = pop_lsb(&b2);
+        Square to = from + (me == WHITE ? 16 : -16);
+        // Check to see if piece is pinned
+        if (likely(!(
+            get_bishop_attacks(my_king_square, all_pieces ^ SQUARE_TO_BITBOARD[from]) & your_diagonal_sliders ||
+            get_rook_attacks(my_king_square, all_pieces ^ SQUARE_TO_BITBOARD[from]) & your_orthogonal_sliders
+        ))) {
+            // Piece is not pinned, add the move
+            Move m = {.flag = QUIET, .from = from, .to = to};
+            *list++ = m;
+        }
+
+    }
+
+    while (b1) {
+        Square from = pop_lsb(&b1);
+        Square to = from + (me == WHITE ? 8 : -8);
+        // Check to see if piece is pinned
+        if (likely(!(
+            get_bishop_attacks(my_king_square, all_pieces ^ SQUARE_TO_BITBOARD[from]) & your_diagonal_sliders ||
+            get_rook_attacks(my_king_square, all_pieces ^ SQUARE_TO_BITBOARD[from]) & your_orthogonal_sliders
+        ))) {
+            // Piece is not pinned, add the move
+            Move m = {.flag = QUIET, .from = from, .to = to};
+            *list++ = m;
+        }
+    }
+
+    // Captures
+    b1 = all_your_pieces & NOT_H_FILE;
+    b2 = my_pawns & (me == WHITE ? (b1 >> 7) : (b1 << 9)); // Capture left
+
+    while (b2) {
+        Square from = pop_lsb(&b2);
+        Square to = from + (me == WHITE ? 7 : -9);
+        list = atomic_add_move(list, me, you, all_pieces, my_pawns | your_pawns,
+                               all_your_pieces, your_orthogonal_sliders,
+                               your_diagonal_sliders, your_knights, your_pawns,
+                               from, to, my_king_square, 1);
+    }
+
+    b1 = all_your_pieces & NOT_A_FILE;
+    b2 = my_pawns & (me == WHITE ? (b1 >> 9) : (b1 << 7)); // Capture right
+
+    while (b2) {
+        Square from = pop_lsb(&b2);
+        Square to = from + (me == WHITE ? 9 : -7);
+        list = atomic_add_move(list, me, you, all_pieces, my_pawns | your_pawns,
+                               all_your_pieces, your_orthogonal_sliders,
+                               your_diagonal_sliders, your_knights, your_pawns,
+                               from, to, my_king_square, 1);
+    }
+
+    // Get en passant targets
+    const U64 enpassant_target = SQUARE_TO_BITBOARD[pos->history[pos->ply].enpassant];
+
+    // Add en passant moves if they exist
+    if (unlikely(enpassant_target)) {
+        b1 = (me == WHITE ? (enpassant_target >> 8) : (enpassant_target << 8));
+        // The EP pawn's current square, and the square we can capture EP on.
+        b2 = (enpassant_target | b1);
+
+        // Capturing left
+        b3 = my_pawns & NOT_H_FILE & (b1 >> 1);
+        if (unlikely(b3)) {
+            Square from = get_lsb_idx(b3);
+            Square to = from + (me == WHITE ? 7 : -9);
+            // Flip the bits in the required bitboards to make it seem like the pawn
+            // only moved a single square forward before passing it to the function.
+            list = atomic_add_move(list, me, you, all_pieces ^ b2, my_pawns | (your_pawns ^ b2),
+                                   all_your_pieces ^ b2, your_orthogonal_sliders,
+                                   your_diagonal_sliders, your_knights, your_pawns ^ b2,
+                                   from, to, my_king_square, 0);
+        }
+
+        // Capturing right 
+        b3 = my_pawns & NOT_A_FILE & (b1 << 1);
+        if (unlikely(b3)) {
+            Square from = get_lsb_idx(b3);
+            Square to = from + (me == WHITE ? 9 : -7);
+            // Flip the bits in the required bitboards to make it seem like the pawn
+            // only moved a single square forward before passing it to the function.
+            list = atomic_add_move(list, me, you, all_pieces ^ b2, my_pawns | (your_pawns ^ b2),
+                                   all_your_pieces ^ b2, your_orthogonal_sliders,
+                                   your_diagonal_sliders, your_knights, your_pawns ^ b2,
+                                   from, to, my_king_square, 0);
+        }
+    }
+
+    // Add knight moves
+    b1 = my_knights;
+    while (b1) {
+        Square from = pop_lsb(&b1);
+        b2 = KNIGHT_ATTACKS[from] & ~all_my_pieces;
+        while (b2) {
+            Square to = pop_lsb(&b2);
+
+            if (unlikely(to & all_your_pieces)) {
+                list = atomic_add_move(list, me, you, all_pieces, my_pawns | your_pawns,
+                                       all_your_pieces, your_orthogonal_sliders,
+                                       your_diagonal_sliders, your_knights, your_pawns,
+                                       from, to, my_king_square, 0);
+            } else {
+                if (likely(!(
+                           get_bishop_attacks(my_king_square, all_pieces ^ SQUARE_TO_BITBOARD[from]) & your_diagonal_sliders ||
+                           get_rook_attacks(my_king_square, all_pieces ^ SQUARE_TO_BITBOARD[from]) & your_orthogonal_sliders
+                           ))) {
+                    // Piece is not pinned, add the move
+                    Move m = {.flag = QUIET, .from = from, .to = to};
+                    *list++ = m;
+                }
+            }
+        }
+    }
+
+    // Add bishop + diagonal queen moves
+    b1 = my_bishops | my_queens;
+    while (b1) {
+        Square from = pop_lsb(&b1);
+        b2 = get_bishop_attacks(from, all_pieces) & ~all_my_pieces;
+        while (b2) {
+            Square to = pop_lsb(&b2);
+
+            if (unlikely(to & all_your_pieces)) {
+                list = atomic_add_move(list, me, you, all_pieces, my_pawns | your_pawns,
+                                       all_your_pieces, your_orthogonal_sliders,
+                                       your_diagonal_sliders, your_knights, your_pawns,
+                                       from, to, my_king_square, 0);
+            } else {
+                if (likely(!(
+                           get_bishop_attacks(my_king_square, all_pieces ^ SQUARE_TO_BITBOARD[from]) & your_diagonal_sliders ||
+                           get_rook_attacks(my_king_square, all_pieces ^ SQUARE_TO_BITBOARD[from]) & your_orthogonal_sliders
+                           ))) {
+                    // Piece is not pinned, add the move
+                    Move m = {.flag = QUIET, .from = from, .to = to};
+                    *list++ = m;
+                }
+            }
+        }
+    }
+
+    // Add rook + orthogonal queen moves
+    b1 = my_rooks | my_queens;
+    while (b1) {
+        Square from = pop_lsb(&b1);
+        b2 = get_rook_attacks(from, all_pieces) & ~all_my_pieces;
+        while (b2) {
+            Square to = pop_lsb(&b2);
+
+            if (unlikely(to & all_your_pieces)) {
+                list = atomic_add_move(list, me, you, all_pieces, my_pawns | your_pawns,
+                                       all_your_pieces, your_orthogonal_sliders,
+                                       your_diagonal_sliders, your_knights, your_pawns,
+                                       from, to, my_king_square, 0);
+            } else {
+                if (likely(!(
+                           get_bishop_attacks(my_king_square, all_pieces ^ SQUARE_TO_BITBOARD[from]) & your_diagonal_sliders ||
+                           get_rook_attacks(my_king_square, all_pieces ^ SQUARE_TO_BITBOARD[from]) & your_orthogonal_sliders
+                           ))) {
+                    // Piece is not pinned, add the move
+                    Move m = {.flag = QUIET, .from = from, .to = to};
+                    *list++ = m;
+                }
+            }
+        }
+    }
+
+    return list;
+}
+
+Move* generate_legal_moves(Position *pos, Move *list) {
+    #ifdef ATOMIC
+        return generate_legal_moves_atomic(pos, list);
+    #else
+        return generate_legal_moves_standard(pos, list);
+    #endif // ATOMIC
 }
 
 Move parse_move(Position *pos, const char *move_str) {

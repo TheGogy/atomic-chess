@@ -11,13 +11,20 @@
 // Perft function, used to measure the speed of the move generator.
 // https://www.chessprogramming.org/Perft
 U64 perft(Position *pos, unsigned int depth) {
+
+    // print_position(pos);
+
+    if (depth == 0) {
+        return 1;
+    }
+
     Move move_list[256];
     U64 n_moves;
     U64 nodes = 0;
 
     n_moves = generate_legal_moves(pos, move_list) - move_list;
 
-    if (depth <= 1) {
+    if (depth == 1) {
         return n_moves;
     }
 

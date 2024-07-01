@@ -5,6 +5,7 @@
 #include "tables.h"
 #include "bitboards.h"
 #include "position.h"
+#include "uci.h"
 
 #define MAX_MOVE_STR_LEN 6
 
